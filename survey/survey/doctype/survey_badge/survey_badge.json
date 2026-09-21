@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-21 10:00:00.000000",
+ "description": "A badge design a certification survey can award on a pass.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["badge_name", "image", "column_break_image", "survey", "description"],
+ "fields": [
+  {
+   "fieldname": "badge_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Badge Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image"
+  },
+  {
+   "fieldname": "column_break_image",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "survey",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Survey",
+   "options": "Survey",
+   "read_only": 1,
+   "description": "Set automatically: the one survey this badge is linked to via its Give Badge setting."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-09-21 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Survey Badge",
+ "naming_rule": "By fieldname",
+ "autoname": "field:badge_name",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Survey Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Survey User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

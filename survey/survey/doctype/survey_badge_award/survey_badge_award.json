@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-21 10:00:00.000000",
+ "description": "One row per badge handed out. The audit trail Odoo's gamification goal/challenge machinery would otherwise provide.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "badge",
+  "survey",
+  "response",
+  "column_break_who",
+  "user",
+  "contact",
+  "awarded_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "badge",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Badge",
+   "options": "Survey Badge",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "survey",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Survey",
+   "options": "Survey",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "Link",
+   "label": "Response",
+   "options": "Survey Response",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_who",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contact",
+   "fieldtype": "Link",
+   "label": "Contact",
+   "options": "Contact",
+   "read_only": 1
+  },
+  {
+   "fieldname": "awarded_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Awarded On",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-09-21 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Survey Badge Award",
+ "naming_rule": "By fieldname",
+ "autoname": "field:response",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Survey Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Survey User"
+  }
+ ],
+ "sort_field": "awarded_on",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

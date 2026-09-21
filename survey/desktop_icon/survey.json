@@ -1,0 +1,21 @@
+{
+ "app": "survey",
+ "bg_color": "blue",
+ "creation": "2026-09-18 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "clipboard-list",
+ "icon_type": "App",
+ "idx": 0,
+ "label": "Survey",
+ "link_type": "Workspace Sidebar",
+ "logo_url": "/assets/survey/images/survey-logo.svg",
+ "modified": "2026-09-18 10:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Survey",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

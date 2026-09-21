@@ -1,0 +1,340 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-09-18 10:00:00.000000",
+ "description": "One person's attempt at one survey.",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "survey",
+  "status",
+  "column_break_head",
+  "is_test",
+  "is_session_response",
+  "section_break_identity",
+  "user",
+  "contact",
+  "email",
+  "column_break_identity",
+  "nickname",
+  "access_token",
+  "invite_token",
+  "section_break_timing",
+  "started_on",
+  "completed_on",
+  "column_break_timing",
+  "deadline",
+  "duration",
+  "section_break_progress",
+  "last_displayed_question",
+  "first_submitted",
+  "column_break_progress",
+  "attempt_number",
+  "attempt_count",
+  "section_break_questions",
+  "predefined_questions",
+  "section_break_answers",
+  "answers",
+  "section_break_scoring",
+  "total_score",
+  "score_percentage",
+  "column_break_scoring",
+  "passed",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "SRES-.YYYY.-.#####",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "survey",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Survey",
+   "options": "Survey",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "New",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "New\nIn Progress\nCompleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "A trial run by a survey user. Excluded from every statistic.",
+   "fieldname": "is_test",
+   "fieldtype": "Check",
+   "label": "Is a Test Entry",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_session_response",
+   "fieldtype": "Check",
+   "label": "Is a Live Session Response",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_identity",
+   "fieldtype": "Section Break",
+   "label": "Respondent"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "User",
+   "options": "User",
+   "search_index": 1
+  },
+  {
+   "fieldname": "contact",
+   "fieldtype": "Link",
+   "label": "Contact",
+   "options": "Contact",
+   "search_index": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "options": "Email",
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Display name, used on the live-session leaderboard.",
+   "fieldname": "nickname",
+   "fieldtype": "Data",
+   "label": "Nickname"
+  },
+  {
+   "description": "The secret in this respondent's personal link.",
+   "fieldname": "access_token",
+   "fieldtype": "Data",
+   "label": "Access Token",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "description": "Shared by every attempt of one invited person. Not unique, by design.",
+   "fieldname": "invite_token",
+   "fieldtype": "Data",
+   "label": "Invite Token",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_timing",
+   "fieldtype": "Section Break",
+   "label": "Timing"
+  },
+  {
+   "fieldname": "started_on",
+   "fieldtype": "Datetime",
+   "label": "Started On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_on",
+   "fieldtype": "Datetime",
+   "label": "Completed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_timing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The respondent cannot open the survey after this moment.",
+   "fieldname": "deadline",
+   "fieldtype": "Datetime",
+   "label": "Deadline"
+  },
+  {
+   "description": "Minutes between starting and completing.",
+   "fieldname": "duration",
+   "fieldtype": "Float",
+   "label": "Duration (Minutes)",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_progress",
+   "fieldtype": "Section Break",
+   "label": "Progress"
+  },
+  {
+   "description": "Where to resume this response.",
+   "fieldname": "last_displayed_question",
+   "fieldtype": "Link",
+   "label": "Last Displayed Question",
+   "options": "Survey Question"
+  },
+  {
+   "default": "0",
+   "description": "The respondent has reached the end once. Used to walk them back through skipped mandatory questions.",
+   "fieldname": "first_submitted",
+   "fieldtype": "Check",
+   "label": "Reached the End Once",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_progress",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attempt_number",
+   "fieldtype": "Int",
+   "label": "Attempt Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attempt_count",
+   "fieldtype": "Int",
+   "label": "Attempts So Far",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "The questions this respondent was dealt, frozen when the response was created.",
+   "fieldname": "section_break_questions",
+   "fieldtype": "Section Break",
+   "label": "Question Set"
+  },
+  {
+   "fieldname": "predefined_questions",
+   "fieldtype": "Table MultiSelect",
+   "label": "Questions",
+   "options": "Survey Response Question",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_answers",
+   "fieldtype": "Section Break",
+   "label": "Answers"
+  },
+  {
+   "fieldname": "answers",
+   "fieldtype": "Table",
+   "label": "Answers",
+   "options": "Survey Response Answer"
+  },
+  {
+   "fieldname": "section_break_scoring",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "total_score",
+   "fieldtype": "Float",
+   "label": "Total Score",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "score_percentage",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Score (%)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_scoring",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "passed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Passed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Survey Response",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-09-18 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Survey Response",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Survey Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Survey User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Survey Respondent"
+  }
+ ],
+ "search_fields": "survey,email,status",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

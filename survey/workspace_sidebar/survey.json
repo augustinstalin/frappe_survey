@@ -1,0 +1,95 @@
+{
+ "app": "survey",
+ "creation": "2026-09-18 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "header_icon": "clipboard-list",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 0,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "type": "Link",
+   "label": "Home",
+   "link_type": "Workspace",
+   "link_to": "Surveys",
+   "icon": "house"
+  },
+  {
+   "child": 0,
+   "collapsible": 0,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "type": "Section Break",
+   "label": "Build"
+  },
+  {
+   "child": 0,
+   "collapsible": 0,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "type": "Link",
+   "label": "Surveys",
+   "link_type": "DocType",
+   "link_to": "Survey",
+   "icon": "clipboard-list"
+  },
+  {
+   "child": 0,
+   "collapsible": 0,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "type": "Link",
+   "label": "Questions",
+   "link_type": "DocType",
+   "link_to": "Survey Question",
+   "icon": "circle-question-mark"
+  },
+  {
+   "child": 0,
+   "collapsible": 0,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "type": "Link",
+   "label": "Options",
+   "link_type": "DocType",
+   "link_to": "Survey Question Option",
+   "icon": "list"
+  },
+  {
+   "child": 0,
+   "collapsible": 0,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "type": "Section Break",
+   "label": "Responses"
+  },
+  {
+   "child": 0,
+   "collapsible": 0,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "type": "Link",
+   "label": "Responses",
+   "link_type": "DocType",
+   "link_to": "Survey Response",
+   "icon": "inbox"
+  }
+ ],
+ "modified": "2026-09-18 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Survey",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Survey"
+}

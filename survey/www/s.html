@@ -1,0 +1,55 @@
+{% extends "templates/web.html" %}
+
+{%- block title -%}{{ title | e }}{%- endblock -%}
+
+{%- block head_include -%}
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+{# A survey link is private by nature, even when the survey is public. #}
+<meta name="robots" content="noindex, nofollow">
+{{ include_style('survey_player.bundle.css') }}
+{%- endblock -%}
+
+{%- block page_content -%}
+{#
+	The Vue app replaces everything inside this element when it mounts. Until
+	then the respondent already has the title, the intro and an explanation,
+	and a visitor without JavaScript at least learns what the page is.
+#}
+<div
+	data-survey-app
+	data-survey-token="{{ survey_token or '' }}"
+	class="survey-player"
+	{% if background_image %}style="--survey-background: url('{{ background_image }}')"{% endif %}
+>
+	<div class="survey-shell">
+		<main class="survey-body">
+			<noscript>
+				<div class="survey-notice">
+					<h2>{{ _("JavaScript is required") }}</h2>
+					<p>{{ _("Please enable JavaScript to take this survey.") }}</p>
+				</div>
+			</noscript>
+
+			{% if bootstrap.state == "error" %}
+			<div class="survey-notice survey-notice--error">
+				<h2 class="survey-notice__title">{{ bootstrap.message | e }}</h2>
+			</div>
+			{% elif bootstrap.state == "new" %}
+			<div class="survey-intro">
+				<h1 class="survey-intro__title">{{ bootstrap.survey.title | e }}</h1>
+				{% if bootstrap.survey.description %}
+				<div class="survey-intro__description">{{ bootstrap.survey.description }}</div>
+				{% endif %}
+			</div>
+			{% endif %}
+		</main>
+	</div>
+</div>
+
+<script type="application/json" data-survey-bootstrap>{{ bootstrap_json }}</script>
+{%- endblock -%}
+
+{%- block script -%}
+{{ super() }}
+{{ include_script('survey_player.bundle.js') }}
+{%- endblock -%}

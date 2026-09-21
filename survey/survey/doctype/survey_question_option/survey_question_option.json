@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-09-18 10:00:00.000000",
+ "description": "A preconfigured answer: a choice, a matrix column, or a matrix row.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "question",
+  "is_matrix_row",
+  "sequence",
+  "column_break_head",
+  "survey",
+  "question_type",
+  "section_break_value",
+  "label",
+  "value_label",
+  "column_break_value",
+  "image",
+  "section_break_scoring",
+  "is_correct",
+  "column_break_scoring",
+  "score"
+ ],
+ "fields": [
+  {
+   "fieldname": "question",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Question",
+   "options": "Survey Question",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "description": "Matrix rows and matrix columns both live here. Columns are the options; rows are flagged.",
+   "fieldname": "is_matrix_row",
+   "fieldtype": "Check",
+   "label": "Is a Matrix Row"
+  },
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "question.survey",
+   "fieldname": "survey",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Survey",
+   "options": "Survey",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "question.question_type",
+   "fieldname": "question_type",
+   "fieldtype": "Data",
+   "label": "Question Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_value",
+   "fieldtype": "Section Break",
+   "label": "Answer"
+  },
+  {
+   "description": "Leave empty to use an image-only answer.",
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label",
+   "translatable": 1
+  },
+  {
+   "description": "The label, or a letter (A, B, C...) when the answer is image-only.",
+   "fieldname": "value_label",
+   "fieldtype": "Data",
+   "label": "Display Label",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_value",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image"
+  },
+  {
+   "fieldname": "section_break_scoring",
+   "fieldtype": "Section Break",
+   "label": "Scoring"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_correct",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Correct"
+  },
+  {
+   "fieldname": "column_break_scoring",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Positive for a correct choice, negative to penalise a wrong one.",
+   "fieldname": "score",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Score"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-18 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Survey Question Option",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Survey Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Survey User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "sequence",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "label"
+}

@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-18 10:00:00.000000",
+ "description": "One answer datum. A multiple-choice answer with three ticks produces three rows; a matrix produces one row per cell; a comment produces its own row.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "question",
+  "question_title",
+  "answer_type",
+  "skipped",
+  "column_break_head",
+  "section",
+  "sequence",
+  "section_break_value",
+  "value_text",
+  "value_long_text",
+  "value_number",
+  "value_scale",
+  "value_date",
+  "value_datetime",
+  "column_break_value",
+  "selected_option",
+  "matrix_row",
+  "section_break_scoring",
+  "is_correct",
+  "column_break_scoring",
+  "score"
+ ],
+ "fields": [
+  {
+   "fieldname": "question",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Question",
+   "options": "Survey Question",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "question.title",
+   "fieldname": "question_title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Question Title",
+   "read_only": 1
+  },
+  {
+   "description": "Which value field carries this answer. Empty when the question was skipped.",
+   "fieldname": "answer_type",
+   "fieldtype": "Select",
+   "label": "Answer Type",
+   "options": "\nText\nLong Text\nNumber\nScale\nDate\nDatetime\nOption\nComment"
+  },
+  {
+   "default": "0",
+   "description": "The question was shown but left unanswered.",
+   "fieldname": "skipped",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Skipped"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "question.section",
+   "fieldname": "section",
+   "fieldtype": "Link",
+   "label": "Section",
+   "options": "Survey Question",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "question.sequence",
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_value",
+   "fieldtype": "Section Break",
+   "label": "Answer"
+  },
+  {
+   "fieldname": "value_text",
+   "fieldtype": "Data",
+   "label": "Text"
+  },
+  {
+   "fieldname": "value_long_text",
+   "fieldtype": "Text",
+   "label": "Long Text"
+  },
+  {
+   "fieldname": "value_number",
+   "fieldtype": "Float",
+   "label": "Number"
+  },
+  {
+   "fieldname": "value_scale",
+   "fieldtype": "Int",
+   "label": "Scale Value"
+  },
+  {
+   "fieldname": "value_date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "value_datetime",
+   "fieldtype": "Datetime",
+   "label": "Datetime"
+  },
+  {
+   "fieldname": "column_break_value",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "selected_option",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Selected Option",
+   "options": "Survey Question Option"
+  },
+  {
+   "description": "Set for matrix answers: the row this cell belongs to.",
+   "fieldname": "matrix_row",
+   "fieldtype": "Link",
+   "label": "Matrix Row",
+   "options": "Survey Question Option"
+  },
+  {
+   "fieldname": "section_break_scoring",
+   "fieldtype": "Section Break",
+   "label": "Scoring"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_correct",
+   "fieldtype": "Check",
+   "label": "Is Correct",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_scoring",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Frozen when the answer is saved. Use \"Recompute Scores\" on the survey to refresh.",
+   "fieldname": "score",
+   "fieldtype": "Float",
+   "label": "Score",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-18 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Survey Response Answer",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "sequence",
+ "sort_order": "ASC",
+ "states": []
+}

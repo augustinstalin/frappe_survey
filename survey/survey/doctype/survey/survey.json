@@ -1,0 +1,427 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-09-18 10:00:00.000000",
+ "description": "A questionnaire: its settings, its questions and its responses.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "title",
+  "survey_type",
+  "column_break_head",
+  "status",
+  "responsible",
+  "close_on",
+  "section_break_content",
+  "description",
+  "end_message",
+  "background_image",
+  "color",
+  "section_break_access",
+  "access_mode",
+  "login_required",
+  "access_token",
+  "column_break_access",
+  "restricted_to",
+  "section_break_pagination",
+  "pagination",
+  "progress_display",
+  "column_break_pagination",
+  "question_selection",
+  "allow_roaming",
+  "section_break_attempts",
+  "limit_attempts",
+  "attempts_limit",
+  "column_break_attempts",
+  "is_time_limited",
+  "time_limit",
+  "section_break_scoring",
+  "scoring_type",
+  "passing_score",
+  "column_break_scoring",
+  "max_obtainable_score",
+  "section_break_certification",
+  "is_certification",
+  "certificate_layout",
+  "column_break_certification",
+  "certificate_email_template",
+  "give_badge",
+  "badge",
+  "section_break_derived",
+  "question_count",
+  "has_conditional_questions",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "SRV-.YYYY.-.####",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "default": "Custom",
+   "description": "Picks sensible defaults for the rest of the settings.",
+   "fieldname": "survey_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "Survey\nLive Session\nAssessment\nCustom",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "description": "Only an Open survey accepts new responses.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nOpen\nClosed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsible",
+   "fieldtype": "Link",
+   "label": "Responsible",
+   "options": "User"
+  },
+  {
+   "description": "Closes the survey automatically at the end of this day.",
+   "fieldname": "close_on",
+   "fieldtype": "Date",
+   "label": "Close On"
+  },
+  {
+   "fieldname": "section_break_content",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "description": "Shown on the start screen, before the first question.",
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description",
+   "translatable": 1
+  },
+  {
+   "description": "Shown once the respondent has finished.",
+   "fieldname": "end_message",
+   "fieldtype": "Text Editor",
+   "label": "End Message",
+   "translatable": 1
+  },
+  {
+   "fieldname": "background_image",
+   "fieldtype": "Attach Image",
+   "label": "Background Image"
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Color",
+   "label": "Colour"
+  },
+  {
+   "fieldname": "section_break_access",
+   "fieldtype": "Section Break",
+   "label": "Access"
+  },
+  {
+   "default": "Public",
+   "fieldname": "access_mode",
+   "fieldtype": "Select",
+   "label": "Access Mode",
+   "options": "Public\nInvited Only",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Respondents must sign in, even when they have a valid link.",
+   "fieldname": "login_required",
+   "fieldtype": "Check",
+   "label": "Require Login"
+  },
+  {
+   "description": "The secret in the public survey link. Regenerating it invalidates every link already shared.",
+   "fieldname": "access_token",
+   "fieldtype": "Data",
+   "label": "Access Token",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_access",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Leave empty to let every Survey User work on this survey.",
+   "fieldname": "restricted_to",
+   "fieldtype": "Table MultiSelect",
+   "label": "Restricted To",
+   "options": "Survey User Restriction"
+  },
+  {
+   "fieldname": "section_break_pagination",
+   "fieldtype": "Section Break",
+   "label": "Presentation"
+  },
+  {
+   "default": "One Page Per Question",
+   "fieldname": "pagination",
+   "fieldtype": "Select",
+   "label": "Pagination",
+   "options": "One Page Per Question\nOne Page Per Section\nAll On One Page",
+   "reqd": 1
+  },
+  {
+   "default": "Percentage",
+   "depends_on": "eval:doc.pagination!='All On One Page'",
+   "fieldname": "progress_display",
+   "fieldtype": "Select",
+   "label": "Show Progress As",
+   "options": "Percentage\nNumber"
+  },
+  {
+   "fieldname": "column_break_pagination",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "All Questions",
+   "description": "Randomised surveys pick N questions per section, fixed per respondent.",
+   "fieldname": "question_selection",
+   "fieldtype": "Select",
+   "label": "Question Selection",
+   "options": "All Questions\nRandomized Per Section",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.pagination!='All On One Page'",
+   "description": "Respondents can go back to earlier pages, and mandatory questions stop blocking.",
+   "fieldname": "allow_roaming",
+   "fieldtype": "Check",
+   "label": "Allow Roaming"
+  },
+  {
+   "fieldname": "section_break_attempts",
+   "fieldtype": "Section Break",
+   "label": "Attempts and Timing"
+  },
+  {
+   "default": "0",
+   "description": "Ignored on public surveys without login, and on surveys with conditional questions.",
+   "fieldname": "limit_attempts",
+   "fieldtype": "Check",
+   "label": "Limit Attempts"
+  },
+  {
+   "default": "1",
+   "depends_on": "limit_attempts",
+   "fieldname": "attempts_limit",
+   "fieldtype": "Int",
+   "label": "Number of Attempts"
+  },
+  {
+   "fieldname": "column_break_attempts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_time_limited",
+   "fieldtype": "Check",
+   "label": "Limit Time"
+  },
+  {
+   "default": "10",
+   "depends_on": "is_time_limited",
+   "fieldname": "time_limit",
+   "fieldtype": "Float",
+   "label": "Time Limit (Minutes)"
+  },
+  {
+   "fieldname": "section_break_scoring",
+   "fieldtype": "Section Break",
+   "label": "Scoring"
+  },
+  {
+   "default": "No Scoring",
+   "fieldname": "scoring_type",
+   "fieldtype": "Select",
+   "label": "Scoring",
+   "options": "No Scoring\nScoring With Answers After Page\nScoring With Answers\nScoring Without Answers",
+   "reqd": 1
+  },
+  {
+   "default": "80",
+   "depends_on": "eval:doc.scoring_type!='No Scoring'",
+   "fieldname": "passing_score",
+   "fieldtype": "Percent",
+   "label": "Required Score (%)"
+  },
+  {
+   "fieldname": "column_break_scoring",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.scoring_type!='No Scoring'",
+   "description": "The highest score a respondent could earn. Recomputed from the questions.",
+   "fieldname": "max_obtainable_score",
+   "fieldtype": "Float",
+   "label": "Maximum Obtainable Score",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.scoring_type!='No Scoring'",
+   "fieldname": "section_break_certification",
+   "fieldtype": "Section Break",
+   "label": "Certification"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_certification",
+   "fieldtype": "Check",
+   "label": "Is a Certification"
+  },
+  {
+   "default": "Modern Purple",
+   "depends_on": "is_certification",
+   "fieldname": "certificate_layout",
+   "fieldtype": "Select",
+   "label": "Certificate Layout",
+   "options": "Modern Purple\nModern Blue\nModern Gold\nClassic Purple\nClassic Blue\nClassic Gold"
+  },
+  {
+   "fieldname": "column_break_certification",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "is_certification",
+   "description": "Sent with the certificate attached when a respondent passes.",
+   "fieldname": "certificate_email_template",
+   "fieldtype": "Link",
+   "label": "Certificate Email Template",
+   "options": "Email Template"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.is_certification && doc.login_required",
+   "fieldname": "give_badge",
+   "fieldtype": "Check",
+   "label": "Give a Badge"
+  },
+  {
+   "depends_on": "give_badge",
+   "description": "Awarded once, on the first pass. Create it under Survey Badges.",
+   "fieldname": "badge",
+   "fieldtype": "Link",
+   "label": "Badge",
+   "mandatory_depends_on": "give_badge",
+   "options": "Survey Badge"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_derived",
+   "fieldtype": "Section Break",
+   "label": "Derived"
+  },
+  {
+   "fieldname": "question_count",
+   "fieldtype": "Int",
+   "label": "Questions",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_conditional_questions",
+   "fieldtype": "Check",
+   "label": "Has Conditional Questions",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Survey",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [
+  {
+   "group": "Questions",
+   "link_doctype": "Survey Question",
+   "link_fieldname": "survey"
+  },
+  {
+   "group": "Responses",
+   "link_doctype": "Survey Response",
+   "link_fieldname": "survey"
+  },
+  {
+   "group": "Certification",
+   "link_doctype": "Survey Badge Award",
+   "link_fieldname": "survey"
+  }
+ ],
+ "modified": "2026-09-18 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Survey",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Survey Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Survey User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "title,survey_type,status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

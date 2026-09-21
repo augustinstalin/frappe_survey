@@ -1,0 +1,702 @@
+/**
+ * The public survey page.
+ *
+ * Design intent: one question owns the screen. The question text is the
+ * largest thing on the page, the controls sit directly under it, and the
+ * chrome (progress, back) is pushed to the edges where it can be ignored.
+ *
+ * Everything is sized in rem off a 16px root so that iOS does not zoom when
+ * an input takes focus, and the whole thing works from 320px up.
+ */
+
+:root {
+	--survey-max-width: 44rem;
+	--survey-gutter: 1rem;
+	--survey-radius: 0.5rem;
+
+	--survey-text: #1f2933;
+	--survey-muted: #6b7280;
+	--survey-line: #d8dee6;
+	--survey-accent: #2563eb;
+	--survey-accent-contrast: #ffffff;
+	--survey-error: #b42318;
+	--survey-success: #067647;
+	--survey-surface: #ffffff;
+	--survey-surface-muted: #f6f8fa;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--survey-text: #e6e8eb;
+		--survey-muted: #9aa4b2;
+		--survey-line: #333b47;
+		--survey-surface: #161a20;
+		--survey-surface-muted: #1e242c;
+	}
+}
+
+.survey-player {
+	min-height: 100vh;
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	color: var(--survey-text);
+	background-color: var(--survey-surface);
+	background-image: var(--survey-background, none);
+	background-size: cover;
+	background-position: center;
+	transition: background-image 300ms ease;
+}
+
+// A background image would make the text unreadable without this scrim.
+.survey-player[style*="--survey-background"] .survey-shell {
+	background: color-mix(in srgb, var(--survey-surface) 92%, transparent);
+	backdrop-filter: blur(2px);
+}
+
+.survey-shell {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	margin: 0 auto;
+	padding: 0 var(--survey-gutter);
+	max-width: calc(var(--survey-max-width) + (var(--survey-gutter) * 2));
+}
+
+// ---------------------------------------------------------------------
+// Header / footer
+// ---------------------------------------------------------------------
+
+.survey-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 1rem 0;
+	min-height: 3.5rem;
+
+	&__title {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--survey-muted);
+	}
+}
+
+.survey-timer {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.25rem 0.6rem;
+	border: 1px solid var(--survey-line);
+	border-radius: 999px;
+	// Tabular figures stop the whole pill twitching as the digits change.
+	font-variant-numeric: tabular-nums;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--survey-muted);
+	transition: color 200ms ease, border-color 200ms ease, background-color 200ms ease;
+
+	&__icon {
+		width: 1em;
+		height: 1em;
+		flex: none;
+	}
+
+	&.is-warning {
+		color: var(--survey-error);
+		border-color: currentColor;
+		background: color-mix(in srgb, var(--survey-error) 8%, transparent);
+		animation: survey-timer-pulse 1s ease-in-out infinite;
+	}
+}
+
+@keyframes survey-timer-pulse {
+	50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.survey-timer.is-warning { animation: none; }
+}
+
+// ---------------------------------------------------------------------
+// Breadcrumb ("One Page Per Section" only)
+// ---------------------------------------------------------------------
+
+.survey-breadcrumb {
+	padding: 0.75rem 0 0.25rem;
+
+	&__list {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.25rem 0.5rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	&__button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.2rem 0.5rem;
+		border: 0;
+		border-radius: 999px;
+		background: none;
+		font: inherit;
+		font-size: 0.8125rem;
+		color: var(--survey-muted);
+		cursor: pointer;
+
+		&.is-static { cursor: default; }
+
+		&:disabled { cursor: default; opacity: 0.6; }
+
+		&:not(.is-static):hover,
+		&:not(.is-static):focus-visible {
+			background: var(--survey-surface-muted);
+			color: var(--survey-text);
+		}
+	}
+
+	&__dot {
+		width: 0.5rem;
+		height: 0.5rem;
+		flex: none;
+		border-radius: 50%;
+		border: 1.5px solid currentColor;
+	}
+
+	&__step {
+		&.is-done .survey-breadcrumb__dot {
+			background: var(--survey-accent);
+			border-color: var(--survey-accent);
+		}
+
+		&.is-current {
+			.survey-breadcrumb__button { color: var(--survey-text); font-weight: 600; }
+			.survey-breadcrumb__dot {
+				border-color: var(--survey-accent);
+				box-shadow: 0 0 0 3px color-mix(in srgb, var(--survey-accent) 25%, transparent);
+			}
+		}
+
+		// A section that still owes a mandatory answer. Colour alone would
+		// not carry this, so the label gets an underline too.
+		&.is-pending {
+			.survey-breadcrumb__dot { border-color: var(--survey-error); }
+			.survey-breadcrumb__label {
+				text-decoration: underline;
+				text-decoration-style: dotted;
+				text-underline-offset: 2px;
+			}
+		}
+	}
+
+	// On a narrow screen the labels are what overflow; the dots still tell
+	// the story, so the labels go and the tooltips remain.
+	@media (max-width: 30rem) {
+		&__label { display: none; }
+		&__button { padding: 0.35rem; }
+	}
+}
+
+.survey-body {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 1rem 0 4rem;
+	transition: opacity 160ms ease, transform 160ms ease;
+
+	// Vue's <Transition name="survey-screen"> drives these.
+	.survey-screen-leave-active {
+		transition: opacity 160ms ease, transform 160ms ease;
+	}
+
+	.survey-screen-leave-to {
+		opacity: 0;
+		transform: translateY(-0.5rem);
+	}
+
+	.survey-screen-enter-from {
+		opacity: 0;
+		transform: translateY(0.5rem);
+	}
+
+	.survey-screen-enter-active {
+		animation: survey-enter 200ms ease forwards;
+	}
+}
+
+@keyframes survey-enter {
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.survey-body,
+	.survey-player,
+	.survey-screen-enter-active,
+	.survey-screen-leave-active {
+		transition: none;
+		animation: none;
+	}
+}
+
+.survey-footer {
+	position: sticky;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.75rem 0;
+	background: var(--survey-surface);
+	border-top: 1px solid var(--survey-line);
+
+	&__progress {
+		flex: 1;
+	}
+}
+
+.survey-progress {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+
+	&__track {
+		flex: 1;
+		height: 0.375rem;
+		border-radius: 999px;
+		background: var(--survey-surface-muted);
+		overflow: hidden;
+	}
+
+	&__fill {
+		height: 100%;
+		width: 0;
+		border-radius: 999px;
+		background: var(--survey-accent);
+		transition: width 240ms ease;
+	}
+
+	&__label {
+		font-size: 0.8125rem;
+		color: var(--survey-muted);
+		font-variant-numeric: tabular-nums;
+		min-width: 3.5rem;
+		text-align: right;
+	}
+}
+
+// ---------------------------------------------------------------------
+// Intro / outro
+// ---------------------------------------------------------------------
+
+.survey-intro,
+.survey-done,
+.survey-notice {
+	&__title {
+		font-size: clamp(1.75rem, 5vw, 2.5rem);
+		line-height: 1.15;
+		margin: 0 0 1rem;
+	}
+
+	&__description,
+	&__message {
+		font-size: 1.0625rem;
+		line-height: 1.6;
+		color: var(--survey-muted);
+	}
+
+	&__meta {
+		margin-top: 1.5rem;
+		color: var(--survey-muted);
+	}
+
+	&__actions {
+		margin-top: 2rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+}
+
+.survey-done__verdict {
+	font-size: 1.125rem;
+	font-weight: 600;
+	margin: 0.5rem 0 1.5rem;
+
+	&.is-passed { color: var(--survey-success); }
+	&.is-failed { color: var(--survey-error); }
+}
+
+.survey-notice--error {
+	// The heading is the whole message on an error screen, so it carries
+	// the colour rather than a separate alert box.
+	.survey-notice__title,
+	h2 {
+		color: var(--survey-error);
+	}
+}
+
+// ---------------------------------------------------------------------
+// Questions
+// ---------------------------------------------------------------------
+
+.survey-section {
+	margin-bottom: 2rem;
+
+	&__title {
+		font-size: 1.5rem;
+		margin: 0 0 0.5rem;
+	}
+
+	&__description {
+		color: var(--survey-muted);
+	}
+}
+
+.survey-question {
+	margin-bottom: 2.5rem;
+
+	&__title {
+		// The question is the largest thing on the screen. Everything else
+		// is subordinate to it.
+		font-size: clamp(1.25rem, 3.5vw, 1.75rem);
+		line-height: 1.3;
+		font-weight: 600;
+		margin: 0 0 0.5rem;
+	}
+
+	&__required {
+		color: var(--survey-error);
+		margin-left: 0.25rem;
+	}
+
+	&__description {
+		color: var(--survey-muted);
+		margin-bottom: 1rem;
+		line-height: 1.6;
+	}
+
+	&__header {
+		margin-bottom: 1.25rem;
+	}
+
+	&__comment {
+		margin-top: 1rem;
+	}
+
+	&__comment-label {
+		display: block;
+		font-size: 0.875rem;
+		color: var(--survey-muted);
+		margin-bottom: 0.375rem;
+	}
+
+	&__error {
+		display: none;
+		margin-top: 0.625rem;
+		color: var(--survey-error);
+		font-size: 0.9375rem;
+
+		&.is-visible { display: block; }
+	}
+
+	&.has-error .survey-input,
+	&.has-error .survey-choice {
+		border-color: var(--survey-error);
+	}
+}
+
+// ---------------------------------------------------------------------
+// Controls
+// ---------------------------------------------------------------------
+
+.survey-input {
+	width: 100%;
+	// 1rem = 16px keeps iOS from zooming the viewport on focus.
+	font-size: 1rem;
+	line-height: 1.5;
+	padding: 0.75rem;
+	color: inherit;
+	background: var(--survey-surface);
+	border: 1px solid var(--survey-line);
+	border-radius: var(--survey-radius);
+
+	&:focus {
+		outline: 2px solid var(--survey-accent);
+		outline-offset: 1px;
+		border-color: var(--survey-accent);
+	}
+
+	&--textarea {
+		resize: none;
+		overflow: hidden;
+		min-height: 5rem;
+	}
+}
+
+.survey-choices {
+	display: flex;
+	flex-direction: column;
+	gap: 0.625rem;
+
+	&--grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+	}
+}
+
+.survey-choice {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	// 48px minimum, so it is comfortably tappable.
+	min-height: 3rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--survey-line);
+	border-radius: var(--survey-radius);
+	background: var(--survey-surface);
+	cursor: pointer;
+	transition: border-color 120ms ease, background-color 120ms ease;
+
+	&:hover { border-color: var(--survey-accent); }
+
+	&:has(input:checked) {
+		border-color: var(--survey-accent);
+		background: color-mix(in srgb, var(--survey-accent) 8%, var(--survey-surface));
+	}
+
+	&:has(input:focus-visible) {
+		outline: 2px solid var(--survey-accent);
+		outline-offset: 2px;
+	}
+
+	&__input {
+		flex: none;
+		width: 1.125rem;
+		height: 1.125rem;
+		accent-color: var(--survey-accent);
+	}
+
+	&__key {
+		flex: none;
+		display: none;
+		min-width: 1.5rem;
+		height: 1.5rem;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--survey-muted);
+		border: 1px solid var(--survey-line);
+		border-radius: 0.25rem;
+	}
+
+	&__label { flex: 1; }
+
+	&__image {
+		width: 100%;
+		border-radius: var(--survey-radius);
+	}
+}
+
+// The letter shortcuts are only live on a device with a keyboard.
+@media (hover: hover) and (min-width: 768px) {
+	.survey-choice__key { display: inline-flex; }
+}
+
+.survey-scale {
+	&__buttons {
+		display: flex;
+		gap: 0.375rem;
+		flex-wrap: wrap;
+	}
+
+	&__item {
+		flex: 1 1 2.75rem;
+		min-width: 2.75rem;
+		min-height: 3rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid var(--survey-line);
+		border-radius: var(--survey-radius);
+		cursor: pointer;
+		font-weight: 600;
+
+		&:has(input:checked) {
+			border-color: var(--survey-accent);
+			background: var(--survey-accent);
+			color: var(--survey-accent-contrast);
+		}
+	}
+
+	&__input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	&__labels {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-top: 0.625rem;
+		font-size: 0.8125rem;
+		color: var(--survey-muted);
+
+		span:nth-child(2) { text-align: center; }
+		span:last-child { text-align: right; }
+	}
+}
+
+// ---------------------------------------------------------------------
+// Matrix
+//
+// Two renderings of the same data: a table on wide screens, one card per row
+// on narrow ones. A matrix in a horizontally scrolling table is the single
+// worst thing about taking a survey on a phone, so we do not ship one.
+// ---------------------------------------------------------------------
+
+.survey-matrix {
+	&--table {
+		width: 100%;
+		border-collapse: collapse;
+
+		th, td {
+			padding: 0.625rem;
+			text-align: center;
+			border-bottom: 1px solid var(--survey-line);
+		}
+
+		th[scope="row"] {
+			text-align: left;
+			font-weight: 500;
+		}
+
+		input { accent-color: var(--survey-accent); width: 1.125rem; height: 1.125rem; }
+	}
+
+	&--cards { display: none; }
+
+	&__card {
+		border: 1px solid var(--survey-line);
+		border-radius: var(--survey-radius);
+		padding: 0.875rem;
+		margin: 0 0 0.75rem;
+	}
+
+	&__row-label {
+		font-weight: 600;
+		padding: 0 0.25rem;
+	}
+
+	&__chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+	}
+
+	&__chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		min-height: 2.75rem;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--survey-line);
+		border-radius: 999px;
+		cursor: pointer;
+
+		&:has(input:checked) {
+			border-color: var(--survey-accent);
+			background: color-mix(in srgb, var(--survey-accent) 10%, transparent);
+		}
+	}
+}
+
+@media (max-width: 767px) {
+	.survey-matrix--table { display: none; }
+	.survey-matrix--cards { display: block; }
+}
+
+// ---------------------------------------------------------------------
+// Buttons
+// ---------------------------------------------------------------------
+
+.survey-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	margin-top: 2rem;
+}
+
+.survey-btn {
+	appearance: none;
+	font: inherit;
+	font-weight: 600;
+	min-height: 3rem;
+	padding: 0.75rem 1.5rem;
+	border-radius: var(--survey-radius);
+	border: 1px solid transparent;
+	cursor: pointer;
+
+	&--primary {
+		background: var(--survey-accent);
+		color: var(--survey-accent-contrast);
+	}
+
+	// The final step reads differently from every step before it.
+	&--submit {
+		background: var(--survey-success);
+		color: #fff;
+	}
+
+	&--ghost {
+		background: transparent;
+		border-color: var(--survey-line);
+		color: var(--survey-text);
+	}
+
+	&:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--survey-accent);
+		outline-offset: 2px;
+	}
+}
+
+.survey-hint {
+	font-size: 0.875rem;
+	color: var(--survey-muted);
+
+	// Pointless advice on a device with no Enter key in view.
+	@media (hover: none) { display: none; }
+
+	// This one is not advice, it is the reason the button says what it says.
+	&--pending {
+		color: var(--survey-error);
+		@media (hover: none) { display: inline; }
+	}
+}
+
+.survey-done__timeout {
+	margin: 0 0 1rem;
+	padding: 0.6rem 0.9rem;
+	border-radius: var(--survey-radius);
+	background: color-mix(in srgb, var(--survey-error) 10%, transparent);
+	color: var(--survey-error);
+	font-size: 0.95rem;
+}

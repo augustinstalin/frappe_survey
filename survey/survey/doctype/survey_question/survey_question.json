@@ -1,0 +1,485 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-09-18 10:00:00.000000",
+ "description": "A question, or - when is_section is set - a section header in the survey's flat ordered list.",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "survey",
+  "is_section",
+  "sequence",
+  "column_break_head",
+  "section",
+  "question_type",
+  "scoring_type",
+  "section_break_content",
+  "title",
+  "description",
+  "background_image",
+  "section_break_section_opts",
+  "random_questions_count",
+  "section_break_answer",
+  "placeholder",
+  "matrix_subtype",
+  "column_break_answer",
+  "allow_comments",
+  "comments_message",
+  "comment_counts_as_answer",
+  "section_break_scale",
+  "scale_min",
+  "scale_max",
+  "column_break_scale",
+  "scale_min_label",
+  "scale_mid_label",
+  "scale_max_label",
+  "section_break_identity",
+  "save_as_email",
+  "save_as_nickname",
+  "section_break_scoring",
+  "is_scored",
+  "score",
+  "column_break_scoring",
+  "correct_number",
+  "correct_date",
+  "correct_datetime",
+  "section_break_validation",
+  "mandatory",
+  "mandatory_error_message",
+  "column_break_validation",
+  "validate_entry",
+  "validate_email",
+  "validation_error_message",
+  "section_break_limits",
+  "min_length",
+  "min_value",
+  "min_date",
+  "min_datetime",
+  "column_break_limits",
+  "max_length",
+  "max_value",
+  "max_date",
+  "max_datetime",
+  "section_break_logic",
+  "triggering_options",
+  "is_misplaced_trigger"
+ ],
+ "fields": [
+  {
+   "fieldname": "survey",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Survey",
+   "options": "Survey",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "description": "A section groups the questions that follow it, and can be a page of its own.",
+   "fieldname": "is_section",
+   "fieldtype": "Check",
+   "label": "Is a Section"
+  },
+  {
+   "description": "Position in the survey. Questions belong to the last section above them.",
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Derived from the order of the survey. Reordering re-parents questions.",
+   "fieldname": "section",
+   "fieldtype": "Link",
+   "label": "Section",
+   "options": "Survey Question",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "depends_on": "eval:!doc.is_section",
+   "fieldname": "question_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Question Type",
+   "options": "\nSingle Choice\nMultiple Choice\nSingle Line Text\nMultiple Line Text\nNumeric\nScale\nDate\nDatetime\nMatrix"
+  },
+  {
+   "fetch_from": "survey.scoring_type",
+   "fieldname": "scoring_type",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Scoring Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_content",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Small Text",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "Guidelines, an illustration or a video shown under the title.",
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description",
+   "translatable": 1
+  },
+  {
+   "depends_on": "is_section",
+   "description": "Shown behind every question in this section.",
+   "fieldname": "background_image",
+   "fieldtype": "Attach Image",
+   "label": "Background Image"
+  },
+  {
+   "depends_on": "is_section",
+   "fieldname": "section_break_section_opts",
+   "fieldtype": "Section Break",
+   "label": "Section Options"
+  },
+  {
+   "default": "1",
+   "depends_on": "is_section",
+   "description": "Used when the survey picks questions randomly per section.",
+   "fieldname": "random_questions_count",
+   "fieldtype": "Int",
+   "label": "Questions Randomly Picked"
+  },
+  {
+   "depends_on": "eval:!doc.is_section",
+   "fieldname": "section_break_answer",
+   "fieldtype": "Section Break",
+   "label": "Answer"
+  },
+  {
+   "depends_on": "eval:['Single Line Text','Multiple Line Text','Numeric','Scale','Date','Datetime'].includes(doc.question_type)",
+   "fieldname": "placeholder",
+   "fieldtype": "Data",
+   "label": "Placeholder",
+   "translatable": 1
+  },
+  {
+   "default": "One Choice Per Row",
+   "depends_on": "eval:doc.question_type=='Matrix'",
+   "fieldname": "matrix_subtype",
+   "fieldtype": "Select",
+   "label": "Matrix Type",
+   "options": "One Choice Per Row\nMultiple Choices Per Row"
+  },
+  {
+   "fieldname": "column_break_answer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:['Single Choice','Multiple Choice','Matrix'].includes(doc.question_type)",
+   "fieldname": "allow_comments",
+   "fieldtype": "Check",
+   "label": "Show Comments Field"
+  },
+  {
+   "default": "If other, please specify:",
+   "depends_on": "allow_comments",
+   "fieldname": "comments_message",
+   "fieldtype": "Data",
+   "label": "Comment Message",
+   "translatable": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "allow_comments",
+   "description": "A comment on its own then satisfies a mandatory question.",
+   "fieldname": "comment_counts_as_answer",
+   "fieldtype": "Check",
+   "label": "Comment Counts as an Answer"
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Scale'",
+   "fieldname": "section_break_scale",
+   "fieldtype": "Section Break",
+   "label": "Scale"
+  },
+  {
+   "default": "0",
+   "fieldname": "scale_min",
+   "fieldtype": "Int",
+   "label": "Minimum Value"
+  },
+  {
+   "default": "10",
+   "fieldname": "scale_max",
+   "fieldtype": "Int",
+   "label": "Maximum Value"
+  },
+  {
+   "fieldname": "column_break_scale",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "scale_min_label",
+   "fieldtype": "Data",
+   "label": "Minimum Label",
+   "translatable": 1
+  },
+  {
+   "fieldname": "scale_mid_label",
+   "fieldtype": "Data",
+   "label": "Middle Label",
+   "translatable": 1
+  },
+  {
+   "fieldname": "scale_max_label",
+   "fieldtype": "Data",
+   "label": "Maximum Label",
+   "translatable": 1
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Single Line Text'",
+   "fieldname": "section_break_identity",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "default": "0",
+   "depends_on": "validate_email",
+   "description": "Stores the answer on the response, so invitations and certificates can reach the respondent.",
+   "fieldname": "save_as_email",
+   "fieldtype": "Check",
+   "label": "Save as Respondent Email"
+  },
+  {
+   "default": "0",
+   "description": "Stores the answer as the respondent's display name.",
+   "fieldname": "save_as_nickname",
+   "fieldtype": "Check",
+   "label": "Save as Respondent Nickname"
+  },
+  {
+   "depends_on": "eval:!doc.is_section && doc.scoring_type && doc.scoring_type!='No Scoring'",
+   "fieldname": "section_break_scoring",
+   "fieldtype": "Section Break",
+   "label": "Scoring"
+  },
+  {
+   "default": "0",
+   "description": "Set automatically from the correct answer or the options marked correct.",
+   "fieldname": "is_scored",
+   "fieldtype": "Check",
+   "label": "Is Scored",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:['Numeric','Date','Datetime'].includes(doc.question_type)",
+   "description": "Awarded when the answer matches. Choice questions score per option instead.",
+   "fieldname": "score",
+   "fieldtype": "Float",
+   "label": "Score"
+  },
+  {
+   "fieldname": "column_break_scoring",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Numeric'",
+   "fieldname": "correct_number",
+   "fieldtype": "Float",
+   "label": "Correct Answer"
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Date'",
+   "fieldname": "correct_date",
+   "fieldtype": "Date",
+   "label": "Correct Answer"
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Datetime'",
+   "fieldname": "correct_datetime",
+   "fieldtype": "Datetime",
+   "label": "Correct Answer"
+  },
+  {
+   "depends_on": "eval:!doc.is_section",
+   "fieldname": "section_break_validation",
+   "fieldtype": "Section Break",
+   "label": "Constraints"
+  },
+  {
+   "default": "0",
+   "fieldname": "mandatory",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Mandatory Answer"
+  },
+  {
+   "default": "This question requires an answer.",
+   "depends_on": "mandatory",
+   "fieldname": "mandatory_error_message",
+   "fieldtype": "Data",
+   "label": "Required Error Message",
+   "translatable": 1
+  },
+  {
+   "fieldname": "column_break_validation",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:['Single Line Text','Numeric','Date','Datetime'].includes(doc.question_type)",
+   "fieldname": "validate_entry",
+   "fieldtype": "Check",
+   "label": "Validate Entry"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.question_type=='Single Line Text'",
+   "fieldname": "validate_email",
+   "fieldtype": "Check",
+   "label": "Must Be an Email Address"
+  },
+  {
+   "default": "The answer you entered is not valid.",
+   "depends_on": "validate_entry",
+   "fieldname": "validation_error_message",
+   "fieldtype": "Data",
+   "label": "Validation Error Message",
+   "translatable": 1
+  },
+  {
+   "depends_on": "validate_entry",
+   "fieldname": "section_break_limits",
+   "fieldtype": "Section Break",
+   "label": "Limits"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.question_type=='Single Line Text'",
+   "fieldname": "min_length",
+   "fieldtype": "Int",
+   "label": "Minimum Length"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.question_type=='Numeric'",
+   "fieldname": "min_value",
+   "fieldtype": "Float",
+   "label": "Minimum Value"
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Date'",
+   "fieldname": "min_date",
+   "fieldtype": "Date",
+   "label": "Minimum Date"
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Datetime'",
+   "fieldname": "min_datetime",
+   "fieldtype": "Datetime",
+   "label": "Minimum Datetime"
+  },
+  {
+   "fieldname": "column_break_limits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.question_type=='Single Line Text'",
+   "fieldname": "max_length",
+   "fieldtype": "Int",
+   "label": "Maximum Length"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.question_type=='Numeric'",
+   "fieldname": "max_value",
+   "fieldtype": "Float",
+   "label": "Maximum Value"
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Date'",
+   "fieldname": "max_date",
+   "fieldtype": "Date",
+   "label": "Maximum Date"
+  },
+  {
+   "depends_on": "eval:doc.question_type=='Datetime'",
+   "fieldname": "max_datetime",
+   "fieldtype": "Datetime",
+   "label": "Maximum Datetime"
+  },
+  {
+   "depends_on": "eval:!doc.is_section",
+   "fieldname": "section_break_logic",
+   "fieldtype": "Section Break",
+   "label": "Conditional Display"
+  },
+  {
+   "description": "Show this question only when one of these answers is picked. Leave empty to always show it.",
+   "fieldname": "triggering_options",
+   "fieldtype": "Table MultiSelect",
+   "label": "Display When Answered",
+   "options": "Survey Question Trigger"
+  },
+  {
+   "default": "0",
+   "description": "This question sits before one of its triggers and could never be shown.",
+   "fieldname": "is_misplaced_trigger",
+   "fieldtype": "Check",
+   "label": "Is Misplaced",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-18 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Survey Question",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Survey Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Survey User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "sequence",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "title"
+}
