@@ -22,11 +22,21 @@ Deferred work, in the order it is expected to land. Anything marked
 Deferred out of phase 2:
 
 - [x] **Breadcrumb** for "One Page Per Section". Done in phase 3.
-- [ ] **`retry`** endpoint. It needs the attempt gate, which is phase 6.
+- [x] **`retry`** endpoint. Done in phase 6, alongside the attempt gate it needed.
 - [x] **Timer UI.** Done in phase 3.
-- [ ] **decision**: translation strategy. Per-field `translatable` (thin) vs
-      one Survey document per language linked by `translation_of` (cleaner).
-      Recommend the latter. Still open; it affects the player's bootstrap.
+- [x] **decision**: translation strategy. Resolved against per-field
+      `translatable` (the thin option) rather than one Survey document per
+      language — checked how LimeSurvey, Odoo and SurveyJS actually do this
+      (all one language-neutral structure + per-language text, not cloned
+      documents) and how Frappe core/ERPNext/HRMS already do it (the same
+      shape: `"translatable": 1` + the core `Translation` doctype). The
+      fields were already flagged; the one missing piece — the player never
+      looking a translation up — is fixed in `survey/player/serializers.py`
+      (`translated()`), which runs every respondent-facing text field
+      through `frappe._()` against `frappe.local.lang` before it reaches the
+      browser. Translators add a translation the normal Frappe way: the
+      translate icon next to the field in the desk form. No new doctypes, no
+      cloned survey trees.
 
 ## Player rewrite — Vue 3 — **done**
 
@@ -52,6 +62,30 @@ is the honest price of the rewrite.
 node_modules (see `apps/hrms/frontend` for the pattern it forces). It is built
 for authenticated desk-adjacent apps; this player is guest + token, server-
 rendered shell, one bundle. Revisit it for the *builder* UI, not here.
+
+## Player UI redesign + Test Survey — **done**
+
+- [x] Full restyle: open canvas, large question type, card choices with
+      A/B/C badges and a tick, hairline progress at the top, sticky
+      Back/Continue bar, direction-aware slide transitions, staggered rise,
+      shake on error, dark mode, reduced-motion respected.
+- [x] Start screen with fact chips (questions, ~minutes, time limit, scored);
+      finish screen with a score ring / check draw, confetti on pass, and a
+      certificate download button.
+- [x] Per-survey **Accent Colour** and **Auto-advance on Single Choice**
+      (fields on Survey). Colour is validated before reaching a style attr.
+- [x] Image-choice zoom lightbox.
+- [x] `Survey` form: **Test Survey** button (`survey.js`) →
+      `survey.api.player.start_test`. Works on Draft surveys; the run is an
+      `is_test` response bound to the author's session, never counted, and
+      purged when the survey structure changes or the survey is deleted (it
+      no longer locks editing). "Run the test again" on the finish screen.
+- [x] `/s/<token>` no longer wrapped in the site navbar/footer/container.
+- [x] Fixed: option `key` was the option's text, not a letter, so A–Z
+      shortcuts never matched.
+
+Not done from the Odoo list: multi-tab detection, image preloading, the
+per-page correct-answer reveal UI (`correct_answers` is sent, not rendered).
 
 ## Phase 3 — Roaming, timers, and the rest of skip logic — **done**
 
@@ -170,28 +204,117 @@ print format in this app:**
    `get_url()` reads back out for the asset URLs. Not a code change — a real
    production deployment already has its own hostname in DNS.
 
-## Phase 5 — Reports
+## Phase 5 — Reports — **done**
 
-- [ ] Results dashboard with cross-question answer filtering.
-- [ ] Query Reports: Survey Answers, Survey Answer Distribution, Score
-      Distribution.
-- [ ] Dashboard + Number Cards for the survey KPIs.
-- [ ] Print Format for an individual response.
+- [x] Results dashboard with cross-question answer filtering. Not a Query
+      Report — it needs AND-able "question = option" filter rows, built at
+      request time, which Report Builder can't express (see the spec, section
+      F). `survey.api.reports.get_filtered_responses` intersects one
+      `Survey Response Answer` lookup per filter row as plain Python sets
+      rather than hand-rolling repeated-join SQL; backs the new
+      `survey-results` Desk Page (`survey/survey/page/survey_results/`),
+      which also shows the header summary (`get_dashboard_summary`) and a
+      filter-row builder fed by `get_choice_questions`. Per-question
+      distributions and trend charts live in the report/dashboard below
+      instead of being duplicated here.
+- [x] Query Reports: **Survey Answers** (one row per answer),
+      **Survey Answer Distribution** (option counts + % per choice question),
+      **Score Distribution** (`score_percentage` bucketed into ranges).
+      `survey/survey/report/`.
+- [x] Dashboard + Number Cards for the survey KPIs. "Survey Analytics"
+      (`survey/survey/survey_dashboard/` — note the module-prefixed folder
+      name; `frappe.utils.dashboard.sync_dashboards` looks for
+      `<module>_dashboard`, not `dashboard`, which is not obvious from
+      the Dashboard Chart/Number Card folders sitting right next to it
+      unprefixed): Total Responses, Completed Responses, Average Score,
+      Certificates Issued, plus a Responses Over Time chart.
+- [x] Print Format for an individual response. `Survey Response Detail`,
+      portrait A4, plain Jinja (not the certificate's bespoke CSS) —
+      question/answer pairs grouped by section, correctness shown only when
+      `Scoring Without Answers` doesn't withhold it. Reads
+      `Survey Response.get_answer_rows()`, computed once in `before_print`
+      alongside the certificate context.
 
-## Phase 6 — Invitations and portal access
+## Phase 6 — Invitations and portal access — **done**
 
-- [ ] `Survey Invite` DocType + the send dialog.
-- [ ] Per-recipient token rendering in the email body.
-- [ ] Attempt limiting enforcement at `start` (the counters exist; the gate
-      does not).
-- [ ] Login-required and signup redirect flows.
-- [ ] `/my/surveys` portal list.
-- [ ] Fill in the four scheduled jobs in `tasks.py` — three are stubs.
-  - [ ] `close_expired_responses`: **decision** — does an expired in-progress
-        response submit with what it has (assessments) or cancel (unstarted
-        invitations)? Currently only the unambiguous case is handled.
-  - [ ] `send_invite_reminders`
-  - [ ] `cleanup_abandoned_responses`
+- [x] `Survey Invite` DocType + the send dialog. Standalone doctype
+      (`survey/survey/doctype/survey_invite/`); `survey.api.invites.send_invites`
+      get-or-creates one per recipient address (idempotent on survey+email)
+      and is called from a "Send Invitations" button/dialog on `survey.js`.
+- [x] Per-recipient token rendering in the email body. `Survey.invite_email_template`
+      (same optional, no-email-if-unset contract as `certificate_email_template`)
+      renders with `{{ invite_url }}` — `/s/<survey token>?invite=<invite token>`.
+- [x] Attempt limiting enforcement at `start` (and at the new
+      `start_via_invite`/`retry`). `player.access.check_attempts_remaining`,
+      backed by `SurveyResponse.build_attempt_pool_filters` (the pooling
+      logic that already existed for *ranking* attempts, now also used to
+      *gate* a new one before it's created) — raises the
+      already-defined-but-previously-unused `NO_ATTEMPTS_LEFT` code.
+- [x] Login-required and signup redirect flows. `survey/www/s.py` now acts on
+      `LOGIN_REQUIRED` (previously computed and never used) by bouncing to
+      `/login?redirect-to=<page>`, the same idiom core portal pages use.
+- [x] `/my/surveys` portal list. `survey/www/my/surveys.py` + `.html`,
+      registered in `hooks.py` `standard_portal_menu_items`.
+- [x] Filled in all four scheduled jobs in `tasks.py`.
+  - [x] `close_expired_responses`: **decision resolved** — an expired
+        in-progress response with any answers recorded submits with what it
+        has (goes through the normal scoring/certification path); one with
+        zero answers cancels, same as the already-handled unstarted case.
+  - [x] `send_invite_reminders`
+  - [x] `cleanup_abandoned_responses`
+
+## Phase 8 — Recurring surveys and wave comparison — **done**
+
+Added after the fact, not part of the original phase plan: comparing answers
+across repeated instances of "the same" survey (an annual engagement survey,
+a quarterly pulse survey) where a few questions change wording each time.
+Researched how LimeSurvey/Qualtrics/Culture Amp/question-bank platforms
+handle this first — they all converge on the same idea: a stable key
+independent of wording, not a text match, plus a way to group the recurring
+instances together. Gated behind a new `Survey.survey_type` value,
+**`Recurring`**, so the fields and the one action that makes it usable only
+ever show up for a survey that opted in.
+
+- [x] `Survey.series`/`wave_label`/`wave_date` — reqd when `Recurring`,
+      cleared by `apply_type_defaults` when switching away, locked once the
+      wave has a real response (`validate_recurrence`,
+      `survey/survey/doctype/survey/survey.py`). `(series, wave_date)` must
+      be unique. `wave_label` is display-only text ("2026 Q2"); `wave_date`
+      is what waves actually sort and compare by — kept separate on purpose
+      so a quarterly/monthly cadence needs no schema change, only more rows
+      in the same report.
+- [x] `Survey Question.comparison_key` — the field that survives a reworded
+      question. Refused outright on a non-`Recurring` survey, and refused
+      twice on the same survey (`validate_comparison_key`,
+      `survey/survey/doctype/survey_question/survey_question.py`).
+- [x] `Survey.duplicate_to_next_wave(wave_label, wave_date)` — clones the
+      whole question/option tree into a new Draft wave, carrying every
+      `comparison_key` forward untouched and remapping cross-question
+      triggers onto the new wave's own cloned options (this is the
+      cloning approach originally explored for translation, before that
+      decision went a different way — revived here for a use case that
+      actually needs an independent second document). "Duplicate to Next
+      Wave" button on `survey.js`, shown only for `Recurring` surveys. The
+      author is then expected to edit only the 2–3 questions that changed;
+      whether a reworded question keeps its old key is a judgement call the
+      tool deliberately leaves to them.
+- [x] `survey.api.comparison` + the `survey-comparison` Desk Page: pick a
+      series, pick a comparison key, see one row per wave (an answer
+      distribution for a choice question, an average for a directly-scorable
+      one), in `wave_date` order. Same shape whether the series has 2 annual
+      waves or a dozen quarterly ones.
+
+**Known simplification:** matching carries over at the *question* level
+(`comparison_key`) but not the *option* level — an option's label is matched
+by its literal text, so retyping "Very Satisfied" as "Extremely Satisfied"
+between waves would silently break that option's row in the comparison. Not
+adding a second key there for now: an answer scale changing wording without
+changing its meaning is rare in practice, and often signals the scale itself
+changed, which breaks comparability regardless of tooling. Also, this only
+compares *populations* (aggregate percentages per wave), not the same
+individual's answer over time — that needs a stable identity (a login,
+typically) carried across every wave's response, which is a separate,
+not-yet-built feature.
 
 ## Phase 7 — Live sessions (optional)
 

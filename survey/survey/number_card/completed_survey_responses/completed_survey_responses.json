@@ -1,0 +1,20 @@
+{
+ "creation": "2026-09-23 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Survey Response",
+ "filters_json": "[[\"Survey Response\",\"is_test\",\"=\",0],[\"Survey Response\",\"docstatus\",\"=\",1]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Completed Responses",
+ "modified": "2026-09-23 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Completed Survey Responses",
+ "owner": "Administrator",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

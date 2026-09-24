@@ -67,8 +67,6 @@ doc_events = {
 
 # ----------------------------------------------------------------------
 # Scheduler
-#
-# TODO(phase-6): implement these. Registered now so the contract is visible.
 # ----------------------------------------------------------------------
 
 scheduler_events = {
@@ -109,4 +107,12 @@ fixtures = [
 
 website_route_rules = [
 	{"from_route": "/s/<token>", "to_route": "s"},
+]
+
+# ----------------------------------------------------------------------
+# Portal
+# ----------------------------------------------------------------------
+
+standard_portal_menu_items = [
+	{"title": "My Surveys", "route": "/my/surveys", "reference_doctype": "Survey Response"},
 ]

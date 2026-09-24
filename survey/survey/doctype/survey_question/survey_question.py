@@ -14,6 +14,7 @@ from survey.constants import (
 	SCALE_ABSOLUTE_MAX,
 	SCALE_ABSOLUTE_MIN,
 	SCORING_NONE,
+	SURVEY_TYPE_RECURRING,
 	TRIGGER_CAPABLE_TYPES,
 	TYPE_MATRIX,
 	TYPE_SCALE,
@@ -42,6 +43,7 @@ class SurveyQuestion(Document):
 		self.validate_score()
 		self.clear_inapplicable_fields()
 		self.validate_triggers()
+		self.validate_comparison_key()
 		self.set_is_scored()
 
 	def on_update(self):
@@ -84,7 +86,14 @@ class SurveyQuestion(Document):
 		if not structural_change:
 			return
 
-		if not frappe.db.exists("Survey Response", {"survey": self.survey, "docstatus": ["!=", 2]}):
+		if not frappe.db.exists(
+			"Survey Response", {"survey": self.survey, "docstatus": ["!=", 2], "is_test": 0}
+		):
+			# Only throwaway test runs, if anything. They would dangle once
+			# the structure changes, so they go rather than block the edit.
+			from survey.survey.doctype.survey_response.survey_response import purge_test_responses
+
+			purge_test_responses(self.survey)
 			return
 
 		frappe.throw(
@@ -334,6 +343,40 @@ class SurveyQuestion(Document):
 
 			if sequence_key(trigger) >= own_key:
 				self.is_misplaced_trigger = 1
+
+	def validate_comparison_key(self):
+		"""`comparison_key` only means anything on a `Recurring` survey — see
+		`Survey.duplicate_to_next_wave`, which is the only place that's
+		supposed to carry one forward. Left on a question whose survey was
+		never part of a series, it's a stale key nobody can act on; two
+		questions on the same survey sharing one key is worse, since a future
+		comparison would have no way to tell which one to read.
+		"""
+		if self.is_section or not self.comparison_key:
+			return
+
+		survey_type = frappe.db.get_value("Survey", self.survey, "survey_type")
+		if survey_type != SURVEY_TYPE_RECURRING:
+			frappe.throw(
+				_("A comparison key only applies to a Recurring survey."),
+				title=_("Not a Recurring Survey"),
+			)
+
+		clash = frappe.db.exists(
+			"Survey Question",
+			{
+				"survey": self.survey,
+				"comparison_key": self.comparison_key,
+				"name": ["!=", self.name or ""],
+			},
+		)
+		if clash:
+			frappe.throw(
+				_("{0} already uses the comparison key {1} on this survey.").format(
+					clash, frappe.bold(self.comparison_key)
+				),
+				title=_("Duplicate Comparison Key"),
+			)
 
 	def set_is_scored(self):
 		"""Derive whether this question contributes to the score.

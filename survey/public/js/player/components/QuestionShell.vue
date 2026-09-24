@@ -8,6 +8,7 @@ const props = defineProps({
 	question: { type: Object, required: true },
 	comment: { type: String, default: "" },
 	error: { type: String, default: "" },
+	number: { type: Number, default: 0 },
 });
 
 const emit = defineEmits(["update:comment"]);
@@ -26,6 +27,7 @@ const emit = defineEmits(["update:comment"]);
 	>
 		<div class="survey-question__header">
 			<h2 class="survey-question__title">
+				<span v-if="number" class="survey-question__number" aria-hidden="true">{{ number }}<svg viewBox="0 0 20 20"><path d="M4 10h11m-4-4 4 4-4 4" /></svg></span>
 				{{ question.title }}
 				<span v-if="question.mandatory" class="survey-question__required" aria-label="required">*</span>
 			</h2>

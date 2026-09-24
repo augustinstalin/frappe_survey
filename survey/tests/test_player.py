@@ -938,3 +938,70 @@ class TestBreadcrumb(IntegrationTestCase):
 		state = player.begin(survey.access_token, token)
 
 		self.assertEqual(state["breadcrumb"], [])
+
+
+class TestTestRun(IntegrationTestCase):
+	"""The author's "Test Survey" button."""
+
+	def setUp(self):
+		frappe.set_user("Administrator")
+		self.survey = open_survey()  # a Draft: not takeable by the public
+		make_question(self.survey, question_type="Single Line Text", title="Name?")
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
+	def test_a_draft_survey_can_be_test_run_end_to_end(self):
+		started = player.start_test(self.survey.name)
+		token = started["response_token"]
+
+		# The public link is closed to everyone else...
+		with self.assertRaises(SurveyAccessError):
+			resolve(self.survey.access_token, require_response=False)
+
+		# ...but the test run's own token gets through, and says it is a test.
+		access = resolve(self.survey.access_token, token)
+		self.assertTrue(player.get_state_payload(access)["is_test"])
+		self.assertTrue(started["url"].endswith(f"?r={token}"))
+
+		player.begin(self.survey.access_token, token)
+		page = player.get_state(self.survey.access_token, token)["page"]
+		done = player.submit_page(
+			self.survey.access_token,
+			token,
+			page["id"],
+			{page["questions"][0]["id"]: {"value": "Ada"}},
+		)
+		self.assertEqual(done["state"], "done")
+		self.assertTrue(done["is_test"])
+
+	def test_a_new_test_run_replaces_the_last_one(self):
+		player.start_test(self.survey.name)
+		player.start_test(self.survey.name)
+
+		self.assertEqual(
+			frappe.db.count("Survey Response", {"survey": self.survey.name, "is_test": 1}), 1
+		)
+
+	def test_a_test_run_does_not_lock_the_survey(self):
+		player.start_test(self.survey.name)
+
+		# A structural edit that a real response would block.
+		make_question(self.survey, question_type="Numeric", title="Age?")
+		self.assertEqual(frappe.db.count("Survey Response", {"survey": self.survey.name}), 0)
+
+	def test_a_survey_with_only_test_runs_can_be_deleted(self):
+		player.start_test(self.survey.name)
+		frappe.delete_doc("Survey", self.survey.name, force=True)
+
+		self.assertFalse(frappe.db.exists("Survey", self.survey.name))
+
+	def test_a_guest_cannot_start_a_test_run(self):
+		frappe.set_user("Guest")
+		with self.assertRaises(frappe.PermissionError):
+			player.start_test(self.survey.name)
+
+	def test_an_empty_survey_cannot_be_test_run(self):
+		empty = make_survey()
+		with self.assertRaises(frappe.ValidationError):
+			player.start_test(empty.name)

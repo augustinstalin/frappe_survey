@@ -26,6 +26,8 @@ const props = defineProps({
 	question: { type: Object, required: true },
 	answer: { type: Object, required: true },
 	error: { type: String, default: "" },
+	// 1-based position shown as a lead-in on one-question-per-page layouts.
+	number: { type: Number, default: 0 },
 });
 
 const emit = defineEmits(["update:answer"]);
@@ -46,6 +48,7 @@ function setComment(comment) {
 		:question="question"
 		:comment="answer.comment"
 		:error="error"
+		:number="number"
 		@update:comment="setComment"
 	>
 		<component

@@ -30,6 +30,11 @@ export function useSurvey(surveyToken, bootstrap) {
 	const timer = computed(() => payload.value.timer || null);
 	const breadcrumb = computed(() => payload.value.breadcrumb || []);
 	const timedOut = computed(() => Boolean(payload.value.timed_out));
+	const isTest = computed(() => Boolean(payload.value.is_test));
+
+	// Which way the next screen should slide in. Set just before the request
+	// so the transition that fires when the reply lands already knows.
+	const direction = ref("forward");
 
 	const hidden = computed(() =>
 		hiddenQuestionIds(questions.value, answers, payload.value.conditional || {})
@@ -100,7 +105,7 @@ export function useSurvey(surveyToken, bootstrap) {
 		});
 	}
 
-	async function submit(direction = "next", targetPageId = null) {
+	async function submit(direction_ = "next", targetPageId = null) {
 		if (screen.value !== "in_progress" || !page.value) return;
 
 		const given = collectAnswers(questions.value, answers, hidden.value);
@@ -109,7 +114,7 @@ export function useSurvey(surveyToken, bootstrap) {
 		// jumping to an earlier section, or running out of time all save
 		// whatever is there and move on; refusing to save a half-filled page
 		// on the way out would lose work rather than protect it.
-		if (direction === "next") {
+		if (direction_ === "next") {
 			const found = validatePage(visibleQuestions.value, given, {
 				allowRoaming: Boolean(survey.value.allow_roaming),
 			});
@@ -121,13 +126,20 @@ export function useSurvey(surveyToken, bootstrap) {
 			}
 		}
 
+		direction.value = "forward";
+		if (direction_ === "back") direction.value = "back";
+		else if (direction_ === "jump") {
+			const at = (id) => breadcrumb.value.findIndex((step) => step.page_id === id || step.id === id);
+			if (at(targetPageId) !== -1 && at(targetPageId) < at(page.value.id)) direction.value = "back";
+		}
+
 		return guarded(async () => {
 			const next = await api.submitPage(
 				surveyToken,
 				responseToken.value,
 				page.value.id,
 				given,
-				direction,
+				direction_,
 				targetPageId
 			);
 
@@ -154,7 +166,9 @@ export function useSurvey(surveyToken, bootstrap) {
 		begin,
 		busy: readonly(busy),
 		errors,
+		direction,
 		hidden,
+		isTest,
 		navigation,
 		page,
 		payload: readonly(payload),

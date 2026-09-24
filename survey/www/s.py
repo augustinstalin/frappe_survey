@@ -10,12 +10,13 @@ no special case for its first render.
 """
 
 import json
+from urllib.parse import quote
 
 import frappe
 
 from survey.api import player
 from survey.player import serializers
-from survey.player.access import SurveyAccessError, resolve
+from survey.player.access import LOGIN_REQUIRED, SurveyAccessError, resolve
 
 no_cache = 1
 
@@ -27,10 +28,19 @@ def get_context(context):
 	context.no_sidebar = True
 
 	token = frappe.form_dict.get("token")
+	invite_token = frappe.form_dict.get("invite")
 	response_token = frappe.form_dict.get("r") or player.get_response_token_from_cookie(token or "")
 
 	context.survey_token = token
-	context.bootstrap = get_bootstrap(token, response_token)
+	context.bootstrap = get_bootstrap(token, response_token, invite_token)
+
+	if context.bootstrap.get("code") == LOGIN_REQUIRED:
+		# The same idiom core portal pages use to gate a guest out of a page
+		# that needs a session: bounce to login, come straight back here once
+		# signed in.
+		frappe.local.flags.redirect_location = "/login?redirect-to=" + quote(frappe.request.path)
+		raise frappe.Redirect
+
 	context.bootstrap_json = encode_bootstrap(context.bootstrap)
 
 	survey = context.bootstrap.get("survey") or {}
@@ -57,7 +67,9 @@ def encode_bootstrap(payload: dict) -> str:
 	)
 
 
-def get_bootstrap(survey_token: str | None, response_token: str | None) -> dict:
+def get_bootstrap(
+	survey_token: str | None, response_token: str | None, invite_token: str | None = None
+) -> dict:
 	"""The first screen, resolved server-side.
 
 	A failure here is not an exception: an expired link or a closed survey is
@@ -67,6 +79,15 @@ def get_bootstrap(survey_token: str | None, response_token: str | None) -> dict:
 		return serializers.serialize_error(
 			"survey_missing", frappe._("This survey link is not valid.")
 		)
+
+	if invite_token and not response_token:
+		# `?invite=` finds-or-creates the invitee's response, the same way
+		# `player.start_via_invite` does over the API — needed here too, since
+		# an invite link has no response token yet for `resolve()` to check.
+		access, error = player.resolve_invite(invite_token)
+		if error:
+			return error
+		return player.get_state_payload(access)
 
 	try:
 		access = resolve(survey_token, response_token, require_response=False)

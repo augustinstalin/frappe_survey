@@ -5,7 +5,7 @@
 	picking one option unpicks the last.
 -->
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps({
 	question: { type: Object, required: true },
@@ -38,6 +38,21 @@ function pick(option) {
 	emit("update:modelValue", current);
 }
 
+// Image zoom: a full-screen view of one answer image, closed by click or Esc.
+const zoomed = ref(null);
+
+function zoom(option, event) {
+	// The image sits inside the option's <label>; without this, opening the
+	// zoom would also pick the answer.
+	event.preventDefault();
+	event.stopPropagation();
+	zoomed.value = option;
+}
+
+function onZoomKey(event) {
+	if (event.key === "Escape") zoomed.value = null;
+}
+
 // Exposed so the keyboard shortcut handler can drive this without touching
 // the DOM the way the old player did.
 defineExpose({ pick, isPicked });
@@ -67,13 +82,29 @@ defineExpose({ pick, isPicked });
 				@change="pick(option)"
 			/>
 			<span v-if="option.key" class="survey-choice__key">{{ option.key }}</span>
-			<img
-				v-if="option.image"
-				class="survey-choice__image"
-				:src="option.image"
-				:alt="option.label || ''"
-			/>
+			<span v-if="option.image" class="survey-choice__media">
+				<img class="survey-choice__image" :src="option.image" :alt="option.label || ''" loading="lazy" />
+				<button type="button" class="survey-choice__zoom" aria-label="Enlarge image" @click="zoom(option, $event)">
+					<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5" /><path d="m13 13 4 4M9 7v4M7 9h4" /></svg>
+				</button>
+			</span>
 			<span v-if="option.label" class="survey-choice__label">{{ option.label }}</span>
+			<svg class="survey-choice__tick" viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10.5 3.5 3.5L15 7" /></svg>
 		</label>
+
+		<Teleport to="body">
+			<div
+				v-if="zoomed"
+				class="survey-lightbox"
+				role="dialog"
+				aria-modal="true"
+				tabindex="-1"
+				@click="zoomed = null"
+				@keydown="onZoomKey"
+				:ref="(node) => node && node.focus()"
+			>
+				<img :src="zoomed.image" :alt="zoomed.label || ''" />
+			</div>
+		</Teleport>
 	</div>
 </template>

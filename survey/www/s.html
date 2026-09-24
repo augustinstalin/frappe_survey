@@ -9,7 +9,13 @@
 {{ include_style('survey_player.bundle.css') }}
 {%- endblock -%}
 
-{%- block page_content -%}
+{# This page owns the whole viewport: no site navbar, breadcrumbs, footer or
+   centred container around it. #}
+{%- block navbar -%}{%- endblock -%}
+{%- block footer -%}{%- endblock -%}
+{%- block breadcrumbs -%}{%- endblock -%}
+
+{%- block page_container -%}
 {#
 	The Vue app replaces everything inside this element when it mounts. Until
 	then the respondent already has the title, the intro and an explanation,

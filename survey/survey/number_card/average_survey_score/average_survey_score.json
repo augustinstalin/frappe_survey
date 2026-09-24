@@ -1,0 +1,21 @@
+{
+ "aggregate_function_based_on": "score_percentage",
+ "creation": "2026-09-23 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Survey Response",
+ "filters_json": "[[\"Survey Response\",\"is_test\",\"=\",0],[\"Survey Response\",\"docstatus\",\"=\",1]]",
+ "function": "Average",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Average Score %",
+ "modified": "2026-09-23 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Survey",
+ "name": "Average Survey Score",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

@@ -7,12 +7,22 @@
 
 const BASE = "/api/method/survey.api.player";
 
+/**
+ * Frappe writes the token into the page as `frappe.csrf_token` (see
+ * `BaseTemplatePage`), not `window.csrf_token`. A guest has none and is not
+ * checked; a signed-in visitor — an author running "Test Survey", or a
+ * login-required survey — is rejected without it.
+ */
+function csrfToken() {
+	return window.frappe?.csrf_token || window.csrf_token || "";
+}
+
 async function call(method, args = {}) {
 	const response = await fetch(`${BASE}.${method}`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			"X-Frappe-CSRF-Token": window.csrf_token || "",
+			"X-Frappe-CSRF-Token": csrfToken(),
 		},
 		credentials: "same-origin",
 		body: JSON.stringify(args),
@@ -53,6 +63,9 @@ export const api = {
 			direction,
 			target_page_id: targetPageId,
 		}),
+
+	// Authors only; a guest gets a permission error, which is correct.
+	startTest: (survey) => call("start_test", { survey }),
 
 	goBack: (surveyToken, responseToken, pageId) =>
 		call("go_back", {

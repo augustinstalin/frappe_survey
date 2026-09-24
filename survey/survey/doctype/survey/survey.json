@@ -20,12 +20,21 @@
   "end_message",
   "background_image",
   "color",
+  "accent_color",
+  "auto_advance",
   "section_break_access",
   "access_mode",
   "login_required",
   "access_token",
   "column_break_access",
   "restricted_to",
+  "section_break_invitations",
+  "invite_email_template",
+  "section_break_recurrence",
+  "series",
+  "wave_label",
+  "column_break_recurrence",
+  "wave_date",
   "section_break_pagination",
   "pagination",
   "progress_display",
@@ -81,7 +90,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Type",
-   "options": "Survey\nLive Session\nAssessment\nCustom",
+   "options": "Survey\nLive Session\nAssessment\nCustom\nRecurring",
    "reqd": 1
   },
   {
@@ -141,6 +150,18 @@
    "label": "Colour"
   },
   {
+   "fieldname": "accent_color",
+   "fieldtype": "Color",
+   "label": "Accent Colour",
+   "description": "Buttons, progress and highlights on the survey page. Leave blank for the default blue."
+  },
+  {
+   "fieldname": "auto_advance",
+   "fieldtype": "Check",
+   "label": "Auto-advance on Single Choice",
+   "description": "On \"One Page Per Question\", move on as soon as an answer is picked. Ignored when the question allows a comment."
+  },
+  {
    "fieldname": "section_break_access",
    "fieldtype": "Section Break",
    "label": "Access"
@@ -179,6 +200,56 @@
    "fieldtype": "Table MultiSelect",
    "label": "Restricted To",
    "options": "Survey User Restriction"
+  },
+  {
+   "fieldname": "section_break_invitations",
+   "fieldtype": "Section Break",
+   "label": "Invitations"
+  },
+  {
+   "description": "Sent to each invitee with their personal link. No email is sent if left unset.",
+   "fieldname": "invite_email_template",
+   "fieldtype": "Link",
+   "label": "Invite Email Template",
+   "options": "Email Template"
+  },
+  {
+   "depends_on": "eval:doc.survey_type==\"Recurring\"",
+   "fieldname": "section_break_recurrence",
+   "fieldtype": "Section Break",
+   "label": "Recurrence"
+  },
+  {
+   "depends_on": "eval:doc.survey_type==\"Recurring\"",
+   "description": "Groups every wave of this recurring survey together, so their answers can be compared. Locked once this wave has a real response.",
+   "fieldname": "series",
+   "fieldtype": "Data",
+   "label": "Series",
+   "mandatory_depends_on": "eval:doc.survey_type==\"Recurring\"",
+   "no_copy": 1
+  },
+  {
+   "depends_on": "eval:doc.survey_type==\"Recurring\"",
+   "description": "How this wave reads to people, e.g. \"2026\" or \"2026 Q2\".",
+   "fieldname": "wave_label",
+   "fieldtype": "Data",
+   "label": "Wave Label",
+   "mandatory_depends_on": "eval:doc.survey_type==\"Recurring\"",
+   "no_copy": 1
+  },
+  {
+   "depends_on": "eval:doc.survey_type==\"Recurring\"",
+   "fieldname": "column_break_recurrence",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.survey_type==\"Recurring\"",
+   "description": "What waves actually sort and compare by — independent of how `Wave Label` reads.",
+   "fieldname": "wave_date",
+   "fieldtype": "Date",
+   "label": "Wave Date",
+   "mandatory_depends_on": "eval:doc.survey_type==\"Recurring\"",
+   "no_copy": 1
   },
   {
    "fieldname": "section_break_pagination",
@@ -386,7 +457,7 @@
    "link_fieldname": "survey"
   }
  ],
- "modified": "2026-09-18 10:00:00.000000",
+ "modified": "2026-09-21 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Survey",
  "name": "Survey",

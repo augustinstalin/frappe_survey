@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
+from frappe.utils import cint, now_datetime
 
 from survey.constants import (
 	ACCESS_INVITED,
@@ -226,3 +226,37 @@ def can_answer(access: Access) -> bool:
 	if access.response.docstatus != 0:
 		return False
 	return access.response.status != RESPONSE_COMPLETED
+
+
+def check_attempts_remaining(
+	survey,
+	user: str | None = None,
+	contact: str | None = None,
+	email: str | None = None,
+	invite_token: str | None = None,
+) -> None:
+	"""Refuse a new attempt once `Survey.attempts_limit` is used up.
+
+	Called right before a *new* response is created — `start` and
+	`start_via_invite` — never for a response that already exists, since
+	answering one further does not create another attempt.
+
+	`Survey.validate_timing_and_attempts` already guarantees
+	`limit_attempts` is only ever set when the survey requires login or is
+	invite-only, so there is always a stable identity to count against by
+	the time this runs; an anonymous public survey never reaches here with
+	`limit_attempts` set.
+	"""
+	if not survey.limit_attempts:
+		return
+
+	from survey.survey.doctype.survey_response.survey_response import (
+		build_attempt_pool_filters,
+	)
+
+	filters = build_attempt_pool_filters(
+		survey.name, user=user, contact=contact, email=email, invite_token=invite_token
+	)
+	used = frappe.db.count("Survey Response", filters)
+	if used >= cint(survey.attempts_limit):
+		raise SurveyAccessError(NO_ATTEMPTS_LEFT)

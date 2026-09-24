@@ -25,6 +25,26 @@ from survey.constants import (
 from survey.player import navigation
 from survey.player.navigation import Page
 
+#: Question fields whose *value* is respondent-facing wording, translated
+#: through `frappe._()` against the visitor's resolved language
+#: (`frappe.local.lang`) before being sent. Every one of these is already
+#: marked `"translatable": 1` on Survey Question — a translator adds the
+#: translation the normal Frappe way (the translate icon on the field in the
+#: desk form), and it is stored in the core `Translation` doctype. This is
+#: the one piece that was missing: nothing previously looked it back up for
+#: the public player.
+QUESTION_TRANSLATABLE_FIELDS = (
+	"title",
+	"description",
+	"placeholder",
+	"mandatory_error_message",
+	"validation_error_message",
+	"comments_message",
+	"scale_min_label",
+	"scale_mid_label",
+	"scale_max_label",
+)
+
 # Fields safe to hand a respondent. Anything not listed is withheld by
 # omission rather than by redaction, so a new field on the DocType is private
 # until somebody decides otherwise.
@@ -95,6 +115,7 @@ def serialize_state(access, page: Page | None, extra: dict | None = None) -> dic
 		"answers": serialize_given_answers(response, page),
 		"conditional": serialize_conditional(survey, response),
 		"background_image": get_background_image(survey, page),
+		"is_test": bool(response.is_test),
 	}
 
 	if extra:
@@ -103,11 +124,21 @@ def serialize_state(access, page: Page | None, extra: dict | None = None) -> dic
 	return payload
 
 
+def translated(text: str | None) -> str | None:
+	"""`frappe._()`, guarded against the empty/None values these fields allow.
+
+	Looks the text up in the current visitor's language (`frappe.local.lang`,
+	already resolved per-request by core) against the core `Translation`
+	doctype, falling back to the original text when no translation exists.
+	"""
+	return frappe._(text) if text else text
+
+
 def serialize_survey(survey) -> dict:
 	return {
 		"name": survey.name,
-		"title": survey.title,
-		"description": survey.description,
+		"title": translated(survey.title),
+		"description": translated(survey.description),
 		"pagination": survey.pagination,
 		"scoring_type": survey.scoring_type,
 		"is_scored": survey.scoring_type != SCORING_NONE,
@@ -118,6 +149,9 @@ def serialize_survey(survey) -> dict:
 		"is_time_limited": bool(survey.is_time_limited),
 		"time_limit": survey.time_limit,
 		"background_image": survey.background_image,
+		"accent_color": survey.accent_color or None,
+		"auto_advance": bool(survey.auto_advance),
+		"question_count": cint(survey.question_count),
 	}
 
 
@@ -136,7 +170,12 @@ def serialize_section(name: str) -> dict | None:
 	row = frappe.db.get_value(
 		"Survey Question", name, ["name", "title", "description"], as_dict=True
 	)
-	return dict(row) if row else None
+	if not row:
+		return None
+	row = dict(row)
+	row["title"] = translated(row["title"])
+	row["description"] = translated(row["description"])
+	return row
 
 
 def load_questions(names: list[str]) -> list:
@@ -157,6 +196,10 @@ def serialize_question(question) -> dict:
 	# Only QUESTION_FIELDS: anything loaded for internal use stays internal.
 	payload = {field: question.get(field) for field in QUESTION_FIELDS}
 	payload["id"] = question.name
+
+	for field in QUESTION_TRANSLATABLE_FIELDS:
+		if field in payload:
+			payload[field] = translated(payload[field])
 
 	if question.question_type in CHOICE_TYPES or question.question_type == TYPE_MATRIX:
 		payload["options"] = serialize_options(question.name, matrix_rows=False)
@@ -182,11 +225,15 @@ def serialize_options(question: str, matrix_rows: bool = False) -> list[dict]:
 	return [
 		{
 			"id": row.name,
-			"label": row.label,
-			"key": row.value_label,
+			"label": translated(row.label),
+			# The A, B, C... badge and keyboard shortcut. `value_label` is not
+			# it: that field carries the option's own text, and only becomes a
+			# letter for image-only options. Matrix rows are not selectable by
+			# key, so they get none.
+			"key": None if matrix_rows or index >= 26 else chr(ord("A") + index),
 			"image": get_url(row.image) if row.image else None,
 		}
-		for row in rows
+		for index, row in enumerate(rows)
 	]
 
 
@@ -354,6 +401,7 @@ def serialize_start(access) -> dict:
 		"survey": serialize_survey(survey),
 		"background_image": get_background_image(survey, None),
 		"progress": {"current": 0, "total": 0, "percent": 0, "mode": survey.progress_display},
+		"is_test": bool(access.response and access.response.is_test),
 	}
 
 
@@ -365,8 +413,10 @@ def serialize_finished(access) -> dict:
 		"response_token": response.access_token if response else None,
 		"survey": serialize_survey(survey),
 		"background_image": get_background_image(survey, None),
-		"end_message": survey.end_message,
+		"end_message": translated(survey.end_message),
 		"result": None,
+		"is_test": bool(response and response.is_test),
+		"certificate_url": None,
 	}
 
 	if response and survey.scoring_type != SCORING_NONE:
@@ -379,6 +429,14 @@ def serialize_finished(access) -> dict:
 			# show its answers at all.
 			"can_review": survey.scoring_type in SCORING_TYPES_REVEALING_ANSWERS,
 		}
+
+	from survey.certification import is_certificate_available
+
+	if is_certificate_available(survey, response):
+		payload["certificate_url"] = (
+			"/api/method/survey.certification.download_certificate"
+			f"?survey_token={survey.access_token}&response_token={response.access_token}"
+		)
 
 	return payload
 

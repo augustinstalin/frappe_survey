@@ -15,7 +15,8 @@ import ProgressBar from "./components/ProgressBar.vue";
 import SurveyBreadcrumb from "./components/SurveyBreadcrumb.vue";
 import SurveyPage from "./components/SurveyPage.vue";
 import SurveyTimer from "./components/SurveyTimer.vue";
-import { focusFirstInput, scrollToTop, setBackground } from "./dom.js";
+import { api } from "./api.js";
+import { contrastOn, focusFirstInput, safeColor, scrollToTop, setBackground } from "./dom.js";
 import { useSurvey } from "./useSurvey.js";
 
 const props = defineProps({
@@ -28,7 +29,9 @@ const {
 	breadcrumb,
 	begin,
 	busy,
+	direction,
 	errors,
+	isTest,
 	navigation,
 	page,
 	payload,
@@ -47,8 +50,66 @@ const body = ref(null);
 const showChrome = computed(() => screen.value === "in_progress");
 const multiQuestion = computed(() => survey.value.pagination !== "One Page Per Question");
 
+const LABELS = {
+	continue: "Continue",
+	submit: "Submit",
+	// The server decides this one: it knows a mandatory question is still
+	// blank somewhere, so "Submit" would be a lie about what the button does.
+	next_skipped: "Next unanswered",
+};
+
+const submitLabel = computed(() => LABELS[navigation.value.submit_label] || LABELS.continue);
+const isSubmit = computed(() => navigation.value.submit_label === "submit");
+const skippedRemaining = computed(() => navigation.value.skipped_remaining || 0);
+
+const progressLabel = computed(() => {
+	const value = progress.value;
+	if (!value || !value.total) return "";
+	return value.mode === "Number" ? `${value.current} / ${value.total}` : `${value.percent}%`;
+});
+
+// The author's accent, validated before it reaches a style attribute.
+const themeStyle = computed(() => {
+	const accent = safeColor(survey.value.accent_color);
+	return accent ? { "--survey-accent": accent, "--survey-accent-contrast": contrastOn(accent) } : {};
+});
+
 function setAnswer(questionId, answer) {
 	answers[questionId] = answer;
+	maybeAutoAdvance(questionId);
+}
+
+/**
+ * Move on by itself once a lone single-choice question is answered.
+ *
+ * Only ever triggered from a respondent's own pick (never from answers being
+ * repopulated on Back), and only where advancing is unambiguous: one question
+ * on screen, one choice allowed, no comment box that still wants typing in.
+ * The short pause lets them see what they picked.
+ */
+let advanceTimer = null;
+
+function maybeAutoAdvance(questionId) {
+	if (!survey.value.auto_advance || multiQuestion.value) return;
+
+	const question = visibleQuestions.value.find((each) => each.id === questionId);
+	if (!question || question.question_type !== "Single Choice" || question.allow_comments) return;
+	if (visibleQuestions.value.length !== 1 || !answers[questionId]?.value) return;
+
+	clearTimeout(advanceTimer);
+	advanceTimer = setTimeout(() => {
+		if (!busy.value && screen.value === "in_progress") submit("next");
+	}, 380);
+}
+
+/** Test runs only: throw this one away and start a fresh one. */
+async function retest() {
+	try {
+		const { message } = await api.startTest(survey.value.name);
+		window.location.href = message.url;
+	} catch (error) {
+		console.error("survey: could not start a new test", error);
+	}
 }
 
 /**
@@ -162,19 +223,31 @@ function toggleOption(question, option) {
 		answers[question.id] = { ...answer, value: current };
 	} else if (question.question_type === "Single Choice") {
 		answers[question.id] = { ...answer, value: option.id };
+		maybeAutoAdvance(question.id);
 	}
 }
 
 onMounted(() => document.addEventListener("keydown", onKeyDown));
-onUnmounted(() => document.removeEventListener("keydown", onKeyDown));
+onUnmounted(() => {
+	document.removeEventListener("keydown", onKeyDown);
+	clearTimeout(advanceTimer);
+});
 </script>
 
 <template>
-	<div ref="root" class="survey-player">
+	<div ref="root" class="survey-player" :style="themeStyle">
+		<ProgressBar v-if="showChrome && progress && progress.total" :progress="progress" />
+
+		<div v-if="isTest" class="survey-testbar" role="status">
+			<strong>Test run</strong>
+			<span>Nothing you answer here is counted or saved to results.</span>
+		</div>
+
 		<div class="survey-shell">
 			<header v-if="showChrome" class="survey-header">
 				<h1 class="survey-header__title">{{ survey.title }}</h1>
 				<div class="survey-header__meta">
+					<span v-if="progressLabel" class="survey-header__count">{{ progressLabel }}</span>
 					<SurveyTimer v-if="timer" :timer="timer" @expired="onExpired" />
 				</div>
 			</header>
@@ -187,7 +260,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeyDown));
 			/>
 
 			<main ref="body" class="survey-body" aria-live="polite">
-				<Transition name="survey-screen" mode="out-in">
+				<Transition :name="`survey-${direction}`" mode="out-in">
 					<ErrorNotice v-if="screen === 'error'" :message="payload.message" />
 
 					<IntroScreen
@@ -202,6 +275,10 @@ onUnmounted(() => document.removeEventListener("keydown", onKeyDown));
 						:result="payload.result"
 						:end-message="payload.end_message"
 						:timed-out="timedOut"
+						:certificate-url="payload.certificate_url"
+						:is-test="isTest"
+						:busy="busy"
+						@retest="retest"
 					/>
 
 					<SurveyPage
@@ -211,9 +288,8 @@ onUnmounted(() => document.removeEventListener("keydown", onKeyDown));
 						:questions="visibleQuestions"
 						:answers="answers"
 						:errors="errors"
-						:submit-label="navigation.submit_label || 'continue'"
-						:skipped-remaining="navigation.skipped_remaining || 0"
-						:busy="busy"
+						:compact="!multiQuestion"
+						:position="progress ? progress.current : 0"
 						@update:answer="setAnswer"
 						@submit="submit('next')"
 					/>
@@ -221,20 +297,33 @@ onUnmounted(() => document.removeEventListener("keydown", onKeyDown));
 			</main>
 
 			<footer v-if="showChrome" class="survey-footer">
-				<div class="survey-footer__left">
-					<button
-						v-if="navigation.can_go_back"
-						type="button"
-						class="survey-btn survey-btn--ghost"
-						:disabled="busy"
-						@click="submit('back')"
-					>
-						Back
-					</button>
-				</div>
-				<div class="survey-footer__progress">
-					<ProgressBar v-if="progress && progress.total" :progress="progress" />
-				</div>
+				<button
+					v-if="navigation.can_go_back"
+					type="button"
+					class="survey-btn survey-btn--ghost"
+					:disabled="busy"
+					@click="submit('back')"
+				>
+					<svg class="survey-btn__arrow survey-btn__arrow--back" viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H5m4-4-4 4 4 4" /></svg>
+					Back
+				</button>
+
+				<span v-if="skippedRemaining" class="survey-hint survey-hint--pending">
+					{{ skippedRemaining }} question{{ skippedRemaining === 1 ? "" : "s" }} still need an answer
+				</span>
+				<span v-else class="survey-hint">press <kbd>Enter ↵</kbd></span>
+
+				<button
+					type="button"
+					class="survey-btn survey-btn--large"
+					:class="isSubmit ? 'survey-btn--submit' : 'survey-btn--primary'"
+					:disabled="busy"
+					@click="submit('next')"
+				>
+					{{ submitLabel }}
+					<svg v-if="!isSubmit" class="survey-btn__arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-4 4 4-4 4" /></svg>
+					<svg v-else class="survey-btn__arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10.5 3.5 3.5L15 7" /></svg>
+				</button>
 			</footer>
 		</div>
 	</div>

@@ -22,9 +22,10 @@ from survey.constants import (
 	STATUS_OPEN,
 	SURVEY_TYPE_ASSESSMENT,
 	SURVEY_TYPE_LIVE_SESSION,
+	SURVEY_TYPE_RECURRING,
 	SURVEY_TYPE_SURVEY,
 )
-from survey.utils.sequencing import recompute_sections, sequence_key
+from survey.utils.sequencing import get_ordered_rows, recompute_sections, sequence_key
 from survey.utils.tokens import generate_token
 
 
@@ -49,6 +50,7 @@ class Survey(Document):
 		self.validate_roaming()
 		self.validate_certification()
 		self.validate_restriction()
+		self.validate_recurrence()
 		self.validate_ready_to_open()
 
 	def on_update(self):
@@ -105,6 +107,14 @@ class Survey(Document):
 			self.is_certification = 0
 			if self.scoring_type == SCORING_NONE:
 				self.scoring_type = SCORING_WITH_ANSWERS
+
+		if self.survey_type != SURVEY_TYPE_RECURRING:
+			# These only mean anything for a survey that opted into being part
+			# of a series; carrying them along after switching away would leave
+			# stale data a later comparison could pick up by accident.
+			self.series = None
+			self.wave_label = None
+			self.wave_date = None
 
 	# ------------------------------------------------------------------
 	# Validation
@@ -222,6 +232,52 @@ class Survey(Document):
 			title=_("Responsible Would Lose Access"),
 		)
 
+	def validate_recurrence(self):
+		"""The fields that make a wave comparable across a series.
+
+		Kept to exactly the `Recurring` type: a survey that never opted into
+		being part of a series has no `series`/`wave_date` to speak of, and
+		`apply_type_defaults` already clears them the moment it stops being
+		Recurring, so reaching here with `survey_type != Recurring` means
+		nothing to check.
+		"""
+		if self.survey_type != SURVEY_TYPE_RECURRING:
+			return
+
+		if not (self.series and self.wave_label and self.wave_date):
+			frappe.throw(
+				_("A recurring survey needs a Series, a Wave Label and a Wave Date."),
+				title=_("Incomplete Recurrence"),
+			)
+
+		duplicate = frappe.db.exists(
+			"Survey",
+			{"series": self.series, "wave_date": self.wave_date, "name": ["!=", self.name or ""]},
+		)
+		if duplicate:
+			frappe.throw(
+				_("{0} already has a wave dated {1}.").format(
+					frappe.bold(self.series), frappe.format(self.wave_date, {"fieldtype": "Date"})
+				),
+				title=_("Duplicate Wave"),
+			)
+
+		before = self.get_doc_before_save()
+		if not before or self.is_new():
+			return
+
+		changed = (
+			before.series != self.series
+			or before.wave_label != self.wave_label
+			or before.wave_date != self.wave_date
+		)
+		if changed and frappe.db.exists("Survey Response", {"survey": self.name, "is_test": 0}):
+			frappe.throw(
+				_("This wave already has responses; its Series, Wave Label and Wave Date can no "
+				  "longer change without breaking the comparison those responses are part of."),
+				title=_("Wave Is Locked"),
+			)
+
 	def validate_ready_to_open(self):
 		"""Gate the Draft -> Open transition on the survey actually working.
 
@@ -273,7 +329,7 @@ class Survey(Document):
 		return problems
 
 	def validate_no_responses(self):
-		if frappe.db.exists("Survey Response", {"survey": self.name}):
+		if frappe.db.exists("Survey Response", {"survey": self.name, "is_test": 0}):
 			frappe.throw(
 				_("This survey has responses. Close it instead of deleting it."),
 				title=_("Cannot Delete"),
@@ -286,6 +342,11 @@ class Survey(Document):
 		survey would leave its questions behind as unreachable rows that still
 		show up in reports.
 		"""
+		from survey.survey.doctype.survey_response.survey_response import purge_test_responses
+
+		# Test runs reference the questions about to go; clear them first.
+		purge_test_responses(self.name)
+
 		names = frappe.get_all("Survey Question", filters={"survey": self.name}, pluck="name")
 		if not names:
 			return
@@ -408,6 +469,85 @@ class Survey(Document):
 		# runner relies on for rollback, leaving every fixture created so far
 		# permanently on the site.
 		return {"rescored": len(responses)}
+
+	@frappe.whitelist()
+	def duplicate_to_next_wave(self, wave_label: str, wave_date: str) -> str:
+		"""Clone this survey into the next wave of its series.
+
+		Only ever called on a `Recurring` survey — the whole point of a wave
+		is that it belongs to a series, and `validate_recurrence` refuses to
+		save one without `series` set. The clone carries every question's
+		`comparison_key` forward untouched, which is what lets an unedited
+		question keep comparing correctly across waves with no further work;
+		the author then edits just the handful of questions that changed for
+		this wave (clearing or changing the key on any of those is a manual,
+		deliberate decision — the tool cannot know whether a reworded
+		question still means the same thing).
+		"""
+		self.check_permission("write")
+
+		if self.survey_type != SURVEY_TYPE_RECURRING:
+			frappe.throw(
+				_("Only a Recurring survey can be duplicated to a new wave."),
+				title=_("Not a Recurring Survey"),
+			)
+
+		new_survey = frappe.copy_doc(self, ignore_no_copy=True)
+		new_survey.title = f"{self.title} — {wave_label}"
+		new_survey.status = STATUS_DRAFT
+		new_survey.access_token = None
+		new_survey.wave_label = wave_label
+		new_survey.wave_date = wave_date
+		new_survey.responsible = frappe.session.user
+		# One badge belongs to one survey (`sync_badge_ownership`); the clone
+		# starts unclaimed rather than fighting the source survey for it.
+		new_survey.give_badge = 0
+		new_survey.badge = None
+		new_survey.insert(ignore_permissions=True)
+
+		old_to_new_question = {}
+		old_to_new_option = {}
+
+		for row in get_ordered_rows(self.name):
+			source = frappe.get_doc("Survey Question", row.name)
+			cloned = frappe.copy_doc(source, ignore_no_copy=True)
+			cloned.survey = new_survey.name
+			cloned.triggering_options = []  # remapped in the second pass below
+			cloned.insert(ignore_permissions=True)
+			old_to_new_question[source.name] = cloned.name
+
+			for option in frappe.get_all(
+				"Survey Question Option",
+				filters={"question": source.name},
+				pluck="name",
+				order_by="sequence asc, creation asc",
+			):
+				source_option = frappe.get_doc("Survey Question Option", option)
+				cloned_option = frappe.copy_doc(source_option, ignore_no_copy=True)
+				cloned_option.question = cloned.name
+				cloned_option.insert(ignore_permissions=True)
+				old_to_new_option[source_option.name] = cloned_option.name
+
+		# Second pass: every trigger reference has to point at *this* wave's
+		# own cloned options — `validate_triggers` refuses a reference to
+		# another survey's option outright, and the source's options are
+		# exactly that from the clone's point of view.
+		for old_name, new_name in old_to_new_question.items():
+			source = frappe.get_doc("Survey Question", old_name)
+			if not source.triggering_options:
+				continue
+
+			cloned = frappe.get_doc("Survey Question", new_name)
+			for trigger in source.triggering_options:
+				new_option = old_to_new_option.get(trigger.option)
+				if new_option:
+					cloned.append("triggering_options", {"option": new_option})
+			cloned.save(ignore_permissions=True)
+
+		recompute_sections(new_survey.name)
+		recompute_derived_fields(new_survey.name)
+
+		return new_survey.name
 
 
 # ----------------------------------------------------------------------

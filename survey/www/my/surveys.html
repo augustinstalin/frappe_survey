@@ -1,0 +1,53 @@
+{% extends "templates/web.html" %}
+
+{%- block title -%}{{ _("My Surveys") }}{%- endblock -%}
+
+{%- block page_content -%}
+<div class="my-surveys">
+	<h1>{{ _("My Surveys") }}</h1>
+
+	{% if not responses %}
+	<p class="text-muted">{{ _("You haven't taken any surveys yet.") }}</p>
+	{% else %}
+	<table class="table table-bordered">
+		<thead>
+			<tr>
+				<th>{{ _("Survey") }}</th>
+				<th>{{ _("Status") }}</th>
+				<th>{{ _("Score") }}</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in responses %}
+			<tr>
+				<td>{{ row.survey_title }}</td>
+				<td>
+					{% if row.is_completed %}
+						{{ _("Completed") }}
+					{% else %}
+						{{ _("In Progress") }}
+					{% endif %}
+				</td>
+				<td>
+					{% if row.is_scored and row.is_completed %}
+						{{ row.score_percentage | round(1) }}%
+						{% if row.passed %}&mdash; {{ _("Passed") }}{% elif row.passed == 0 %}&mdash; {{ _("Not Passed") }}{% endif %}
+					{% else %}
+						&mdash;
+					{% endif %}
+				</td>
+				<td>
+					{% if row.url %}
+					<a href="{{ row.url }}">
+						{{ _("Review") if row.is_completed else _("Continue") }}
+					</a>
+					{% endif %}
+				</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% endif %}
+</div>
+{%- endblock -%}

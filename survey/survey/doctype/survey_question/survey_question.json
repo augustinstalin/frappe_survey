@@ -64,7 +64,9 @@
   "max_datetime",
   "section_break_logic",
   "triggering_options",
-  "is_misplaced_trigger"
+  "is_misplaced_trigger",
+  "section_break_recurrence",
+  "comparison_key"
  ],
  "fields": [
   {
@@ -442,6 +444,19 @@
    "fieldtype": "Check",
    "label": "Is Misplaced",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval:!doc.is_section",
+   "fieldname": "section_break_recurrence",
+   "fieldtype": "Section Break",
+   "label": "Recurrence"
+  },
+  {
+   "description": "Set only on a Recurring survey. Carried forward automatically by \"Duplicate to Next Wave\" so an unchanged question keeps comparing correctly across waves; give a reworded-but-equivalent question the same key by hand, and a genuinely new question no key at all.",
+   "fieldname": "comparison_key",
+   "fieldtype": "Data",
+   "label": "Comparison Key",
+   "no_copy": 1
   }
  ],
  "index_web_pages_for_search": 0,

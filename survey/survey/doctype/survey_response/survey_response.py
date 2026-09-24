@@ -72,18 +72,25 @@ class SurveyResponse(Document):
 		self.status = RESPONSE_IN_PROGRESS
 
 	def before_print(self, print_settings=None):
-		"""Feed the certificate everything it needs.
+		"""Feed every Survey Response print format everything it needs.
 
 		Both the direct download (`certification.download_certificate`) and
 		the emailed copy (`frappe.attach_print`, from `on_response_submit`)
 		render through `frappe.get_print`, which calls this before handing the
 		document to the template — so the computation lives in exactly one
-		place rather than being duplicated between the two callers.
+		place rather than being duplicated between the two callers. Runs for
+		every print format on this doctype, not just the certificate — the
+		`Survey Response Detail` format reads `answer_rows` from here too.
 		"""
 		from survey.certification import build_certificate_context
+		from survey.constants import SCORING_TYPES_REVEALING_ANSWERS
 
 		for key, value in build_certificate_context(self).items():
 			setattr(self, key, value)
+
+		survey = frappe.get_cached_doc("Survey", self.survey)
+		reveals_answers = survey.scoring_type in SCORING_TYPES_REVEALING_ANSWERS
+		self.answer_rows = self.get_answer_rows(reveal_correctness=reveals_answers)
 
 	# ------------------------------------------------------------------
 	# Question set
@@ -308,6 +315,38 @@ class SurveyResponse(Document):
 		)
 		return _sum_max_obtainable(questions)
 
+	def get_answer_rows(self, reveal_correctness: bool = False) -> list[dict]:
+		"""One row per given answer: question text plus what was said.
+
+		Feeds the `Survey Response Detail` print format. `reveal_correctness`
+		mirrors the same gate the player and the certificate already respect
+		(`Scoring Without Answers` withholds it) — a caller that has not
+		checked the survey's scoring mode must pass `False`.
+		"""
+		questions = self.get_question_meta()
+		option_labels = _option_labels_for_answers(self.answers)
+
+		rows = []
+		for row in sorted(self.answers, key=lambda r: (r.sequence or 0, r.idx or 0)):
+			if row.is_comment:
+				continue
+
+			question = questions.get(row.question)
+			rows.append(
+				{
+					"section_title": _section_title(row.section),
+					"question_title": row.question_title
+					or (question.title if question else row.question),
+					"answer": _display_answer(row, option_labels),
+					"skipped": bool(row.skipped),
+					"is_correct": (
+						bool(row.is_correct) if reveal_correctness and not row.skipped else None
+					),
+				}
+			)
+
+		return rows
+
 	def get_section_breakdown(self) -> list[dict]:
 		"""Correct / partial / incorrect / skipped, grouped by section.
 
@@ -430,24 +469,14 @@ class SurveyResponse(Document):
 			self.attempt_number = self.attempt_count
 
 	def get_attempt_pool_filters(self) -> dict:
-		filters = {
-			"survey": self.survey,
-			"is_test": 0,
-			"docstatus": 1,
-		}
-		if self.invite_token:
-			filters["invite_token"] = self.invite_token
-		elif self.user:
-			filters["user"] = self.user
-		elif self.contact:
-			filters["contact"] = self.contact
-		elif self.email:
-			filters["email"] = self.email
-		else:
-			# Anonymous and un-invited: there is no pool to speak of.
-			filters["name"] = self.name
-
-		return filters
+		return build_attempt_pool_filters(
+			self.survey,
+			user=self.user,
+			contact=self.contact,
+			email=self.email,
+			invite_token=self.invite_token,
+			fallback_name=self.name,
+		)
 
 	# ------------------------------------------------------------------
 	# Progress helpers used by the player (phase 2)
@@ -677,3 +706,96 @@ def _section_title(section: str | None) -> str:
 		return _("General")
 
 	return frappe.db.get_value("Survey Question", section, "title") or _("General")
+
+
+def _option_labels_for_answers(answers) -> dict:
+	"""Batch-resolve every option label an answer set touches, once, rather
+	than one query per row — a matrix question alone can have dozens."""
+	names = {row.selected_option for row in answers if row.selected_option}
+	names |= {row.matrix_row for row in answers if row.matrix_row}
+	if not names:
+		return {}
+
+	return {
+		row.name: row.label
+		for row in frappe.get_all(
+			"Survey Question Option", filters={"name": ["in", list(names)]}, fields=["name", "label"]
+		)
+	}
+
+
+def _display_answer(row, option_labels: dict) -> str:
+	"""The given answer as print-ready text."""
+	if row.skipped:
+		return ""
+
+	if row.answer_type == "Option":
+		option_text = option_labels.get(row.selected_option, row.selected_option or "")
+		if row.matrix_row:
+			row_text = option_labels.get(row.matrix_row, row.matrix_row)
+			return f"{row_text}: {option_text}"
+		return option_text
+
+	value = row.get_value()
+	return "" if value is None else str(value)
+
+
+def build_attempt_pool_filters(
+	survey: str,
+	user: str | None = None,
+	contact: str | None = None,
+	email: str | None = None,
+	invite_token: str | None = None,
+	fallback_name: str | None = None,
+) -> dict:
+	"""The set of `Survey Response` rows that count as "the same person's
+	attempts at this survey" — matched by invite token first (the most
+	specific, since an invite is issued to one person), then user, then
+	contact, then email. Used both by `SurveyResponse.get_attempt_pool_filters`
+	(instance method, ranking a submitted attempt) and by
+	`player.access.check_attempts_remaining` (a pre-check, before a response
+	even exists, so it takes the identity directly rather than an instance).
+
+	With no stable identity at all — an anonymous, un-invited visitor — there
+	is no pool to speak of; the caller passes its own `fallback_name` so the
+	filters resolve to "just this one row" rather than to every anonymous
+	response on the survey.
+	"""
+	filters = {"survey": survey, "is_test": 0, "docstatus": 1}
+
+	if invite_token:
+		filters["invite_token"] = invite_token
+	elif user:
+		filters["user"] = user
+	elif contact:
+		filters["contact"] = contact
+	elif email:
+		filters["email"] = email
+	else:
+		filters["name"] = fallback_name
+
+	return filters
+
+
+def purge_test_responses(survey: str, user: str | None = None) -> int:
+	"""Delete an author's throwaway test runs.
+
+	A test entry exists so somebody can walk their own draft. It must never
+	lock the survey against edits, block deleting it, or show up in results,
+	so the moment it stops being useful it goes. Removed with plain deletes:
+	these are submitted documents nobody else links to, and routing them
+	through `delete_doc` would demand a cancel first for no benefit.
+	"""
+	filters = {"survey": survey, "is_test": 1}
+	if user:
+		filters["user"] = user
+
+	names = frappe.get_all("Survey Response", filters=filters, pluck="name")
+	if not names:
+		return 0
+
+	for child in ("Survey Response Answer", "Survey Response Question"):
+		frappe.db.delete(child, {"parenttype": "Survey Response", "parent": ["in", names]})
+	frappe.db.delete("Survey Response", {"name": ["in", names]})
+
+	return len(names)

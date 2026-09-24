@@ -30,8 +30,12 @@ from survey.constants import (
 from survey.player import navigation, persistence, serializers, validation
 from survey.player.access import (
 	NO_ATTEMPTS_LEFT,
+	Access,
 	SurveyAccessError,
 	can_answer,
+	check_attempts_remaining,
+	check_survey_has_content,
+	check_survey_is_open,
 	resolve,
 )
 
@@ -66,12 +70,162 @@ def start(survey_token: str, response_token: str | None = None, email: str | Non
 			"response_required", _("This survey is open to invited people only.")
 		)
 
+	user = frappe.session.user if frappe.session.user != "Guest" else None
+	try:
+		check_attempts_remaining(access.survey, user=user, email=email)
+	except SurveyAccessError as error:
+		return serializers.serialize_error(error.code, str(error))
+
 	response = create_response(access.survey, email=email)
 	access.response = response
 
 	_set_response_cookie(access.survey.access_token, response.access_token)
 
 	return get_state_payload(access)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=30, seconds=60 * 60)
+def start_via_invite(invite_token: str) -> dict:
+	"""Enter a survey through a personal invitation link.
+
+	Reuses the same `create_response`/`resolve` path `start` does — the only
+	difference is the identity comes from a `Survey Invite` row instead of the
+	session/cookie, and the first call to this also fills in
+	`Survey Invite.response`/`status` so a resend or a resume both land on the
+	same attempt.
+	"""
+	access, error = resolve_invite(invite_token)
+	if error:
+		return error
+
+	_set_response_cookie(access.survey.access_token, access.response.access_token)
+	return get_state_payload(access)
+
+
+def resolve_invite(invite_token: str):
+	"""Find-or-create the response behind an invite token.
+
+	Returns `(access, None)` on success or `(None, error_payload)` — shared by
+	`start_via_invite` and the server-rendered bootstrap in `survey/www/s.py`,
+	which needs the exact same resolution before it can call `access.resolve`
+	with an actual response token.
+	"""
+	invite = frappe.db.get_value(
+		"Survey Invite",
+		{"invite_token": invite_token},
+		["name", "survey", "email", "contact", "user", "response"],
+		as_dict=True,
+	)
+	if not invite:
+		return None, serializers.serialize_error(
+			"response_missing", _("This invitation link is not valid.")
+		)
+
+	survey = frappe.get_doc("Survey", invite.survey)
+
+	if not invite.response:
+		try:
+			check_survey_is_open(survey)
+			check_survey_has_content(survey)
+			check_attempts_remaining(
+				survey, user=invite.user, contact=invite.contact, email=invite.email, invite_token=invite_token
+			)
+		except SurveyAccessError as error:
+			return None, serializers.serialize_error(error.code, str(error))
+
+		response = create_response(
+			survey,
+			email=invite.email,
+			user=invite.user,
+			contact=invite.contact,
+			invite_token=invite_token,
+		)
+		frappe.db.set_value(
+			"Survey Invite", invite.name, {"response": response.name, "status": "Started"}
+		)
+		invite.response = response.name
+
+	response_token = frappe.db.get_value("Survey Response", invite.response, "access_token")
+	try:
+		access = resolve(survey.access_token, response_token, require_response=False)
+	except SurveyAccessError as error:
+		return None, serializers.serialize_error(error.code, str(error))
+
+	return access, None
+
+
+@frappe.whitelist(allow_guest=True)
+def retry(survey_token: str, response_token: str) -> dict:
+	"""Start a fresh attempt after a completed one.
+
+	Only reachable once `Survey.attempts_limit` still allows another try — the
+	same `check_attempts_remaining` gate `start`/`start_via_invite` use before
+	creating a response at all. The new attempt carries forward the same pool
+	identity (`user`/`contact`/`email`/`invite_token`) as the one it follows,
+	so it counts against the same pool rather than starting a fresh one.
+	"""
+	try:
+		access = resolve(survey_token, response_token, require_response=True, allow_closed=True)
+	except SurveyAccessError as error:
+		return serializers.serialize_error(error.code, str(error))
+
+	old = access.response
+	if old.docstatus == 0 and old.status != RESPONSE_COMPLETED:
+		return serializers.serialize_error(
+			"not_allowed", _("This attempt is still in progress.")
+		)
+
+	try:
+		check_attempts_remaining(
+			access.survey, user=old.user, contact=old.contact, email=old.email, invite_token=old.invite_token
+		)
+	except SurveyAccessError as error:
+		return serializers.serialize_error(error.code, str(error))
+
+	response = create_response(
+		access.survey, email=old.email, user=old.user, contact=old.contact, invite_token=old.invite_token
+	)
+
+	if old.invite_token:
+		invite_name = frappe.db.get_value("Survey Invite", {"invite_token": old.invite_token}, "name")
+		if invite_name:
+			frappe.db.set_value(
+				"Survey Invite", invite_name, {"response": response.name, "status": "Started"}
+			)
+
+	new_access = Access(survey=access.survey, response=response)
+	_set_response_cookie(access.survey.access_token, response.access_token)
+	return get_state_payload(new_access)
+
+
+@frappe.whitelist()
+def start_test(survey: str) -> dict:
+	"""Open a private test run of a survey, draft or not.
+
+	For the people who build surveys, not respondents, so it is *not*
+	guest-callable and needs read access to the survey. The run is an
+	ordinary response flagged `is_test`: it bypasses the "is this survey
+	open" check, never counts towards attempts, scores, results, badges or
+	certificates, and is purged when the survey's structure next changes.
+	Starting a new one discards the author's previous one, so testing does not
+	pile rows up.
+	"""
+	from survey.survey.doctype.survey_response.survey_response import purge_test_responses
+
+	frappe.has_permission("Survey", "read", survey, throw=True)
+	doc = frappe.get_doc("Survey", survey)
+
+	if not doc.question_count:
+		frappe.throw(_("Add at least one question before testing this survey."))
+
+	purge_test_responses(doc.name, user=frappe.session.user)
+	response = create_response(doc, is_test=1)
+
+	return {
+		"url": f"/s/{doc.access_token}?r={response.access_token}",
+		"response_token": response.access_token,
+	}
 
 
 def create_response(survey, email: str | None = None, **values):
