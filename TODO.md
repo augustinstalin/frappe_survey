@@ -316,7 +316,17 @@ individual's answer over time — that needs a stable identity (a login,
 typically) carried across every wave's response, which is a separate,
 not-yet-built feature.
 
-## Phase 7 — Live sessions (optional)
+## Phase 7 — Live sessions (optional) — **deferred to Quizzly, see below**
+
+**Decision: not building this here.**
+[`PHASE_7_LIVE_SESSIONS.md`](PHASE_7_LIVE_SESSIONS.md) has the detail —
+[`bwhtech/quizzly`](https://github.com/bwhtech/quizzly) is a mature,
+standalone Frappe app that already does exactly this (host PIN, no-login
+join, server-authoritative scoring, a shared RQ ticker, a genuinely simple
+guest-realtime extension via `realtime/handlers.js`). Install it for this
+need instead of duplicating it here. The bullets below are left unchecked
+and unedited as a record of what a from-scratch build would have needed, in
+case that decision is ever revisited — none of it is built.
 
 - [ ] `Survey Session` DocType. Deliberately separate from `Survey`, unlike
       Odoo, so one survey can host concurrent sessions.
