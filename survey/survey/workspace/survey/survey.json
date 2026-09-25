@@ -1,7 +1,12 @@
 {
  "app": "survey",
- "charts": [],
- "content": "[{\"id\": \"svy-header-build\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Build</b></span>\", \"col\": 12}}, {\"id\": \"svy-card-surveys\", \"type\": \"card\", \"data\": {\"card_name\": \"Surveys\", \"col\": 4}}, {\"id\": \"svy-card-questions\", \"type\": \"card\", \"data\": {\"card_name\": \"Questions\", \"col\": 4}}, {\"id\": \"svy-header-collect\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Responses</b></span>\", \"col\": 12}}, {\"id\": \"svy-card-responses\", \"type\": \"card\", \"data\": {\"card_name\": \"Responses\", \"col\": 4}}]",
+ "charts": [
+  {
+   "label": "Responses Over Time",
+   "chart_name": "Responses Over Time"
+  }
+ ],
+ "content": "[{\"id\": \"svy-header-stats\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Statistics</b></span>\", \"col\": 12}}, {\"id\": \"svy-card-stat-0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Surveys\", \"col\": 3}}, {\"id\": \"svy-card-stat-1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Open Surveys\", \"col\": 3}}, {\"id\": \"svy-card-stat-2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Survey Responses\", \"col\": 3}}, {\"id\": \"svy-card-stat-3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Completed Survey Responses\", \"col\": 3}}, {\"id\": \"svy-card-stat-4\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Average Survey Score\", \"col\": 3}}, {\"id\": \"svy-card-stat-5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Average Response Duration\", \"col\": 3}}, {\"id\": \"svy-card-stat-6\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Certificates Issued\", \"col\": 3}}, {\"id\": \"svy-chart-responses\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Responses Over Time\", \"col\": 12}}, {\"id\": \"svy-header-build\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Build</b></span>\", \"col\": 12}}, {\"id\": \"svy-card-surveys\", \"type\": \"card\", \"data\": {\"card_name\": \"Surveys\", \"col\": 4}}, {\"id\": \"svy-card-questions\", \"type\": \"card\", \"data\": {\"card_name\": \"Questions\", \"col\": 4}}, {\"id\": \"svy-header-collect\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Responses</b></span>\", \"col\": 12}}, {\"id\": \"svy-card-responses\", \"type\": \"card\", \"data\": {\"card_name\": \"Responses\", \"col\": 4}}]",
  "creation": "2026-09-18 10:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -78,11 +83,40 @@
    "type": "Link"
   }
  ],
- "modified": "2026-09-18 10:00:00.000000",
+ "modified": "2026-09-25 04:42:28.642137",
  "modified_by": "Administrator",
  "module": "Survey",
  "name": "Surveys",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Total Surveys",
+   "number_card_name": "Total Surveys"
+  },
+  {
+   "label": "Open Surveys",
+   "number_card_name": "Open Surveys"
+  },
+  {
+   "label": "Total Survey Responses",
+   "number_card_name": "Total Survey Responses"
+  },
+  {
+   "label": "Completed Survey Responses",
+   "number_card_name": "Completed Survey Responses"
+  },
+  {
+   "label": "Average Survey Score",
+   "number_card_name": "Average Survey Score"
+  },
+  {
+   "label": "Average Response Duration",
+   "number_card_name": "Average Response Duration"
+  },
+  {
+   "label": "Certificates Issued",
+   "number_card_name": "Certificates Issued"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,

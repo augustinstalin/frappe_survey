@@ -29,6 +29,16 @@ add_to_apps_screen = [
 after_install = "survey.install.after_install"
 
 # ----------------------------------------------------------------------
+# Notifications
+#
+# See `survey/notifications.py` — overrides ERPNext's blanket
+# "docstatus=0 is open" default for Survey Response, which otherwise shows
+# a misleading "open" badge on the Survey form's dashboard.
+# ----------------------------------------------------------------------
+
+notification_config = "survey.notifications.get_notification_config"
+
+# ----------------------------------------------------------------------
 # Permissions
 #
 # Respondents are NOT covered here: the public endpoints authenticate them

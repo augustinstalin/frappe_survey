@@ -1,8 +1,11 @@
 {
  "cards": [
+  {"card": "Total Surveys"},
+  {"card": "Open Surveys"},
   {"card": "Total Survey Responses"},
   {"card": "Completed Survey Responses"},
   {"card": "Average Survey Score"},
+  {"card": "Average Response Duration"},
   {"card": "Certificates Issued"}
  ],
  "charts": [

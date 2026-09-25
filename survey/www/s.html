@@ -6,6 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 {# A survey link is private by nature, even when the survey is public. #}
 <meta name="robots" content="noindex, nofollow">
+{#
+	The manifest is generated per-survey (survey.api.pwa.manifest) rather than
+	served as a static file: its `start_url` has to be *this* survey's link,
+	or "install" would reopen a token-less `/s` page instead of the survey the
+	respondent actually came for.
+#}
+<link rel="manifest" href="/api/method/survey.api.pwa.manifest?token={{ survey_token | urlencode }}">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="/assets/survey/images/pwa/icon-192.png">
 {{ include_style('survey_player.bundle.css') }}
 {%- endblock -%}
 
